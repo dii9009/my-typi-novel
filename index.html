@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Cloud Novel Studio</title>
+    <style>
+        body { margin: 0; display: flex; background: #1a1a1a; color: #d4d4d4; font-family: 'Pretendard', sans-serif; overflow: hidden; }
+        
+        /* 사이드바 */
+        .sidebar { width: 220px; height: 100vh; background: #111; border-right: 1px solid #333; padding: 20px; display: flex; flex-direction: column; box-sizing: border-box; }
+        .sidebar h2 { font-size: 0.8rem; color: #555; letter-spacing: 2px; margin-bottom: 15px; text-align: center; }
+        
+        .add-btn { 
+            width: 100%; padding: 12px; background: #2a2a2a; border: 1px solid #444; color: #fff; 
+            cursor: pointer; border-radius: 8px; margin-bottom: 25px; font-size: 0.85rem; font-weight: bold; transition: 0.3s;
+        }
+        .add-btn:hover { background: #333; border-color: #666; }
+
+        .chapter-list { flex: 1; overflow-y: auto; list-style: none; padding: 0; margin: 0; }
+        
+        /* [수정] 리스트 아이템 디자인: 제목과 삭제버튼 배치 */
+        .chapter-item-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-radius: 6px; transition: 0.2s; }
+        .chapter-item-container:hover { background: #1a1a1a; }
+        .chapter-item-container.active { background: #222; border: 1px solid #444; }
+
+        .chapter-item { flex: 1; padding: 12px; cursor: pointer; font-size: 0.85rem; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .chapter-item-container.active .chapter-item { color: #fff; font-weight: bold; }
+        
+        /* [추가] 삭제 버튼 스타일 */
+        .delete-btn { padding: 0 12px; color: #444; cursor: pointer; font-size: 0.8rem; transition: 0.3s; }
+        .delete-btn:hover { color: #ff4d4d; }
+
+        /* 메인 에디터 */
+        .main-content { flex: 1; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; align-items: center; padding: 60px 20px; box-sizing: border-box; }
+        #chapter-title { width: 100%; max-width: 750px; font-size: 1.8rem; border: none; background: transparent; color: #fff; outline: none; margin-bottom: 40px; font-weight: bold; }
+        #editor { width: 100%; max-width: 750px; min-height: 70vh; border: none; outline: none; font-size: 1.15rem; line-height: 2.1; color: #d4d4d4; }
+        
+        .status-bar { position: fixed; bottom: 0; left: 220px; right: 0; background: #1a1a1a; padding: 12px 25px; border-top: 1px solid #222; display: flex; justify-content: space-between; font-size: 0.75rem; color: #555; }
+        
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .status-bar { left: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>STUDIO</h2>
+        <button class="add-btn" onclick="addNewChapter()">+ 새 에피소드 추가</button>
+        <ul class="chapter-list" id="chapter-list"></ul>
+    </div>
+
+    <div class="main-content">
+        <input type="text" id="chapter-title" placeholder="제목을 입력하세요">
+        <div id="editor" contenteditable="true"></div>
+    </div>
+
+    <div class="status-bar">
+        <div id="word-count">글자 수: 0</div>
+        <div id="sync-status">연결 확인 중...</div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // 🔥 본인의 Firebase 설정값을 다시 넣어주세요!
+        const firebaseConfig = {
+        apiKey: "AIzaSyC4FjTYr8xxPH9y7H13h8EzIf-CxKb8QkI",
+  authDomain: "my-typi-app.firebaseapp.com",
+  projectId: "my-typi-app",
+  storageBucket: "my-typi-app.firebasestorage.app",
+  messagingSenderId: "793573516752",
+  appId: "1:793573516752:web:2b3d20a8c432a0b5d445d5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let currentChapterId = ''; 
+        const editor = document.getElementById('editor');
+        const titleInput = document.getElementById('chapter-title');
+        const listContainer = document.getElementById('chapter-list');
+        const syncStatus = document.getElementById('sync-status');
+
+        onSnapshot(query(collection(db, "myNovels"), orderBy("createdAt", "desc")), (snapshot) => {
+            listContainer.innerHTML = '';
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                
+                // 리스트 아이템 생성
+                const container = document.createElement('li');
+                container.className = `chapter-item-container ${doc.id === currentChapterId ? 'active' : ''}`;
+                
+                const item = document.createElement('div');
+                item.className = 'chapter-item';
+                item.innerText = data.title || '제목 없음';
+                item.onclick = () => loadChapter(doc.id);
+                
+                const delBtn = document.createElement('div');
+                delBtn.className = 'delete-btn';
+                delBtn.innerHTML = '×';
+                delBtn.onclick = (e) => {
+                    e.stopPropagation(); // 클릭 이벤트 전파 방지
+                    deleteChapter(doc.id, data.title);
+                };
+                
+                container.appendChild(item);
+                container.appendChild(delBtn);
+                listContainer.appendChild(container);
+            });
+            
+            if(!currentChapterId && !snapshot.empty) {
+                loadChapter(snapshot.docs[0].id);
+            }
+        });
+
+        async function loadChapter(id) {
+            currentChapterId = id;
+            const docRef = doc(db, "myNovels", id);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                titleInput.value = data.title || "";
+                editor.innerHTML = data.content || "";
+                updateWordCount();
+            }
+        }
+
+        // [추가] 삭제 함수
+        async function deleteChapter(id, title) {
+            if(confirm(`'${title || '제목 없음'}' 에피소드를 영구히 삭제할까요?`)) {
+                try {
+                    await deleteDoc(doc(db, "myNovels", id));
+                    if(currentChapterId === id) {
+                        currentChapterId = '';
+                        titleInput.value = '';
+                        editor.innerHTML = '';
+                    }
+                    syncStatus.innerText = "☁️ 에피소드 삭제됨";
+                } catch (e) {
+                    alert("삭제 중 오류가 발생했습니다.");
+                }
+            }
+        }
+
+        let saveTimeout;
+        const autoSave = () => {
+            if(!currentChapterId) return;
+            syncStatus.innerText = "☁️ 저장 중...";
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(async () => {
+                try {
+                    await setDoc(doc(db, "myNovels", currentChapterId), {
+                        title: titleInput.value,
+                        content: editor.innerHTML,
+                        updatedAt: Date.now()
+                    }, { merge: true });
+                    syncStatus.innerText = "☁️ 모든 변경사항 저장됨";
+                    updateWordCount();
+                } catch (e) {
+                    syncStatus.innerText = "❌ 저장 실패";
+                }
+            }, 500);
+        };
+
+        window.addNewChapter = async () => {
+            const newId = 'ch' + Date.now();
+            await setDoc(doc(db, "myNovels", newId), {
+                title: "새 에피소드",
+                content: "",
+                createdAt: Date.now()
+            });
+            loadChapter(newId);
+        };
+
+        function updateWordCount() {
+            const text = editor.innerText || "";
+            document.getElementById('word-count').innerText = `글자 수: ${text.length}`;
+        }
+
+        editor.addEventListener('input', autoSave);
+        titleInput.addEventListener('input', autoSave);
+    </script>
+</body>
+</html>
