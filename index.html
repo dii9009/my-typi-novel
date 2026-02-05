@@ -2,57 +2,76 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>My Cloud Novel Studio</title>
     <style>
         body { margin: 0; display: flex; background: #1a1a1a; color: #d4d4d4; font-family: 'Pretendard', sans-serif; overflow: hidden; }
         
-        /* 사이드바 */
-        .sidebar { width: 220px; height: 100vh; background: #111; border-right: 1px solid #333; padding: 20px; display: flex; flex-direction: column; box-sizing: border-box; }
-        .sidebar h2 { font-size: 0.8rem; color: #555; letter-spacing: 2px; margin-bottom: 15px; text-align: center; }
+        /* 사이드바 스타일 (모바일 대응) */
+        .sidebar { 
+            width: 250px; height: 100vh; background: #111; border-right: 1px solid #333; 
+            padding: 20px; display: flex; flex-direction: column; box-sizing: border-box;
+            transition: transform 0.3s ease; z-index: 1000;
+        }
+        
+        /* [추가] 모바일용 메뉴 열기/닫기 상태 */
+        @media (max-width: 768px) {
+            .sidebar { position: fixed; left: 0; top: 0; transform: translateX(-100%); }
+            .sidebar.active { transform: translateX(0); }
+            .main-content { padding-top: 80px !important; }
+        }
+
+        .sidebar h2 { font-size: 0.8rem; color: #555; letter-spacing: 2px; margin-bottom: 15px; text-align: center; margin-top: 30px; }
         
         .add-btn { 
             width: 100%; padding: 12px; background: #2a2a2a; border: 1px solid #444; color: #fff; 
-            cursor: pointer; border-radius: 8px; margin-bottom: 25px; font-size: 0.85rem; font-weight: bold; transition: 0.3s;
+            cursor: pointer; border-radius: 8px; margin-bottom: 25px; font-size: 0.85rem; font-weight: bold;
         }
-        .add-btn:hover { background: #333; border-color: #666; }
 
         .chapter-list { flex: 1; overflow-y: auto; list-style: none; padding: 0; margin: 0; }
-        
-        /* [수정] 리스트 아이템 디자인: 제목과 삭제버튼 배치 */
-        .chapter-item-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-radius: 6px; transition: 0.2s; }
-        .chapter-item-container:hover { background: #1a1a1a; }
+        .chapter-item-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-radius: 6px; }
         .chapter-item-container.active { background: #222; border: 1px solid #444; }
-
         .chapter-item { flex: 1; padding: 12px; cursor: pointer; font-size: 0.85rem; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .chapter-item-container.active .chapter-item { color: #fff; font-weight: bold; }
-        
-        /* [추가] 삭제 버튼 스타일 */
-        .delete-btn { padding: 0 12px; color: #444; cursor: pointer; font-size: 0.8rem; transition: 0.3s; }
-        .delete-btn:hover { color: #ff4d4d; }
+        .delete-btn { padding: 0 12px; color: #444; cursor: pointer; font-size: 1rem; }
+
+        /* [추가] 모바일 메뉴 토글 버튼 */
+        .menu-toggle {
+            position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 2000; /* 다른 어떤 것보다 위에 보임 */
+    background: #ff4d4d; /* 눈에 띄게 일단 빨간색으로 설정해 보세요 */
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-weight: bold;
+    display: block !important; /* 무조건 표시 */
+        }
+        @media (max-width: 768px) { .menu-toggle { display: block; } }
 
         /* 메인 에디터 */
-        .main-content { flex: 1; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; align-items: center; padding: 60px 20px; box-sizing: border-box; }
-        #chapter-title { width: 100%; max-width: 750px; font-size: 1.8rem; border: none; background: transparent; color: #fff; outline: none; margin-bottom: 40px; font-weight: bold; }
-        #editor { width: 100%; max-width: 750px; min-height: 70vh; border: none; outline: none; font-size: 1.15rem; line-height: 2.1; color: #d4d4d4; }
+        .main-content { flex: 1; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; align-items: center; padding: 60px 20px; box-sizing: border-box; transition: 0.3s; }
+        #chapter-title { width: 100%; max-width: 750px; font-size: 1.6rem; border: none; background: transparent; color: #fff; outline: none; margin-bottom: 30px; font-weight: bold; }
+        #editor { width: 100%; max-width: 750px; min-height: 70vh; border: none; outline: none; font-size: 1.1rem; line-height: 1.9; color: #d4d4d4; -webkit-user-select: text; }
         
-        .status-bar { position: fixed; bottom: 0; left: 220px; right: 0; background: #1a1a1a; padding: 12px 25px; border-top: 1px solid #222; display: flex; justify-content: space-between; font-size: 0.75rem; color: #555; }
-        
-        @media (max-width: 768px) {
-            .sidebar { display: none; }
-            .status-bar { left: 0; }
-        }
+        /* 하단 정보바 */
+        .status-bar { position: fixed; bottom: 0; left: 250px; right: 0; background: #1a1a1a; padding: 12px 25px; border-top: 1px solid #222; display: flex; justify-content: space-between; font-size: 0.7rem; color: #555; z-index: 900; }
+        @media (max-width: 768px) { .status-bar { left: 0; } }
     </style>
 </head>
 <body>
 
-    <div class="sidebar">
+    <button class="menu-toggle" onclick="toggleSidebar()">☰ 메뉴</button>
+
+    <div class="sidebar" id="sidebar">
         <h2>STUDIO</h2>
         <button class="add-btn" onclick="addNewChapter()">+ 새 에피소드 추가</button>
         <ul class="chapter-list" id="chapter-list"></ul>
     </div>
 
-    <div class="main-content">
+    <div class="main-content" onclick="closeSidebar()">
         <input type="text" id="chapter-title" placeholder="제목을 입력하세요">
         <div id="editor" contenteditable="true"></div>
     </div>
@@ -68,7 +87,7 @@
 
         // 🔥 본인의 Firebase 설정값을 다시 넣어주세요!
         const firebaseConfig = {
-        apiKey: "AIzaSyC4FjTYr8xxPH9y7H13h8EzIf-CxKb8QkI",
+             apiKey: "AIzaSyC4FjTYr8xxPH9y7H13h8EzIf-CxKb8QkI",
   authDomain: "my-typi-app.firebaseapp.com",
   projectId: "my-typi-app",
   storageBucket: "my-typi-app.firebasestorage.app",
@@ -84,37 +103,35 @@
         const titleInput = document.getElementById('chapter-title');
         const listContainer = document.getElementById('chapter-list');
         const syncStatus = document.getElementById('sync-status');
+        const sidebar = document.getElementById('sidebar');
+
+        // 사이드바 토글 함수
+        window.toggleSidebar = () => sidebar.classList.toggle('active');
+        window.closeSidebar = () => { if(window.innerWidth <= 768) sidebar.classList.remove('active'); };
 
         onSnapshot(query(collection(db, "myNovels"), orderBy("createdAt", "desc")), (snapshot) => {
             listContainer.innerHTML = '';
             snapshot.forEach((doc) => {
                 const data = doc.data();
-                
-                // 리스트 아이템 생성
                 const container = document.createElement('li');
                 container.className = `chapter-item-container ${doc.id === currentChapterId ? 'active' : ''}`;
                 
                 const item = document.createElement('div');
                 item.className = 'chapter-item';
                 item.innerText = data.title || '제목 없음';
-                item.onclick = () => loadChapter(doc.id);
+                item.onclick = () => { loadChapter(doc.id); closeSidebar(); };
                 
                 const delBtn = document.createElement('div');
                 delBtn.className = 'delete-btn';
                 delBtn.innerHTML = '×';
-                delBtn.onclick = (e) => {
-                    e.stopPropagation(); // 클릭 이벤트 전파 방지
-                    deleteChapter(doc.id, data.title);
-                };
+                delBtn.onclick = (e) => { e.stopPropagation(); deleteChapter(doc.id, data.title); };
                 
                 container.appendChild(item);
                 container.appendChild(delBtn);
                 listContainer.appendChild(container);
             });
             
-            if(!currentChapterId && !snapshot.empty) {
-                loadChapter(snapshot.docs[0].id);
-            }
+            if(!currentChapterId && !snapshot.empty) { loadChapter(snapshot.docs[0].id); }
         });
 
         async function loadChapter(id) {
@@ -129,20 +146,10 @@
             }
         }
 
-        // [추가] 삭제 함수
         async function deleteChapter(id, title) {
-            if(confirm(`'${title || '제목 없음'}' 에피소드를 영구히 삭제할까요?`)) {
-                try {
-                    await deleteDoc(doc(db, "myNovels", id));
-                    if(currentChapterId === id) {
-                        currentChapterId = '';
-                        titleInput.value = '';
-                        editor.innerHTML = '';
-                    }
-                    syncStatus.innerText = "☁️ 에피소드 삭제됨";
-                } catch (e) {
-                    alert("삭제 중 오류가 발생했습니다.");
-                }
+            if(confirm(`'${title || '제목 없음'}' 삭제할까요?`)) {
+                await deleteDoc(doc(db, "myNovels", id));
+                if(currentChapterId === id) { currentChapterId = ''; titleInput.value = ''; editor.innerHTML = ''; }
             }
         }
 
@@ -158,11 +165,9 @@
                         content: editor.innerHTML,
                         updatedAt: Date.now()
                     }, { merge: true });
-                    syncStatus.innerText = "☁️ 모든 변경사항 저장됨";
+                    syncStatus.innerText = "☁️ 저장됨";
                     updateWordCount();
-                } catch (e) {
-                    syncStatus.innerText = "❌ 저장 실패";
-                }
+                } catch (e) { syncStatus.innerText = "❌ 실패"; }
             }, 500);
         };
 
@@ -174,6 +179,7 @@
                 createdAt: Date.now()
             });
             loadChapter(newId);
+            closeSidebar();
         };
 
         function updateWordCount() {
