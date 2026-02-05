@@ -7,14 +7,13 @@
     <style>
         body { margin: 0; display: flex; background: #1a1a1a; color: #d4d4d4; font-family: 'Pretendard', sans-serif; overflow: hidden; }
         
-        /* 사이드바 스타일 (모바일 대응) */
+        /* 사이드바 스타일 */
         .sidebar { 
             width: 250px; height: 100vh; background: #111; border-right: 1px solid #333; 
             padding: 20px; display: flex; flex-direction: column; box-sizing: border-box;
             transition: transform 0.3s ease; z-index: 1000;
         }
         
-        /* [추가] 모바일용 메뉴 열기/닫기 상태 */
         @media (max-width: 768px) {
             .sidebar { position: fixed; left: 0; top: 0; transform: translateX(-100%); }
             .sidebar.active { transform: translateX(0); }
@@ -35,28 +34,31 @@
         .chapter-item-container.active .chapter-item { color: #fff; font-weight: bold; }
         .delete-btn { padding: 0 12px; color: #444; cursor: pointer; font-size: 1rem; }
 
-        /* [추가] 모바일 메뉴 토글 버튼 */
+        /* 모바일 메뉴 토글 버튼 */
         .menu-toggle {
-            position: fixed;
-    top: 15px;
-    left: 15px;
-    z-index: 2000; /* 다른 어떤 것보다 위에 보임 */
-    background: #ff4d4d; /* 눈에 띄게 일단 빨간색으로 설정해 보세요 */
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 8px;
-    font-weight: bold;
-    display: block !important; /* 무조건 표시 */
+            position: fixed; top: 15px; left: 15px; z-index: 2000;
+            background: #ff4d4d; color: white; border: none; padding: 10px 15px;
+            border-radius: 8px; font-weight: bold; display: block !important;
         }
-        @media (max-width: 768px) { .menu-toggle { display: block; } }
 
-        /* 메인 에디터 */
+        /* 메인 에디터 (줄 간격 강제 고정) */
         .main-content { flex: 1; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; align-items: center; padding: 60px 20px; box-sizing: border-box; transition: 0.3s; }
         #chapter-title { width: 100%; max-width: 750px; font-size: 1.6rem; border: none; background: transparent; color: #fff; outline: none; margin-bottom: 30px; font-weight: bold; }
-        #editor { width: 100%; max-width: 750px; min-height: 70vh; border: none; outline: none; font-size: 1.1rem; line-height: 1.2em !important; color: #d4d4d4; -webkit-user-select: text; }
         
-        /* 하단 정보바 */
+        /* 🔥 줄간격을 1.2em으로 강력 고정했습니다. */
+        #editor { 
+            width: 100%; 
+            max-width: 750px; 
+            min-height: 70vh; 
+            border: none; 
+            outline: none; 
+            font-size: 1.15rem; 
+            line-height: 1.2em !important; 
+            color: #d4d4d4; 
+            -webkit-user-select: text; 
+            white-space: pre-wrap; /* 줄바꿈 간격 유지용 */
+        }
+        
         .status-bar { position: fixed; bottom: 0; left: 250px; right: 0; background: #1a1a1a; padding: 12px 25px; border-top: 1px solid #222; display: flex; justify-content: space-between; font-size: 0.7rem; color: #555; z-index: 900; }
         @media (max-width: 768px) { .status-bar { left: 0; } }
     </style>
@@ -87,12 +89,13 @@
 
         // 🔥 본인의 Firebase 설정값을 다시 넣어주세요!
         const firebaseConfig = {
-             apiKey: "AIzaSyC4FjTYr8xxPH9y7H13h8EzIf-CxKb8QkI",
+              apiKey: "AIzaSyC4FjTYr8xxPH9y7H13h8EzIf-CxKb8QkI",
   authDomain: "my-typi-app.firebaseapp.com",
   projectId: "my-typi-app",
   storageBucket: "my-typi-app.firebasestorage.app",
   messagingSenderId: "793573516752",
   appId: "1:793573516752:web:2b3d20a8c432a0b5d445d5"
+
         };
 
         const app = initializeApp(firebaseConfig);
@@ -105,7 +108,6 @@
         const syncStatus = document.getElementById('sync-status');
         const sidebar = document.getElementById('sidebar');
 
-        // 사이드바 토글 함수
         window.toggleSidebar = () => sidebar.classList.toggle('active');
         window.closeSidebar = () => { if(window.innerWidth <= 768) sidebar.classList.remove('active'); };
 
@@ -192,3 +194,4 @@
     </script>
 </body>
 </html>
+
