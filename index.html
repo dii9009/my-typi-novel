@@ -3,19 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>My Cloud Novel Studio v3.6</title>
+    <title>My Cloud Novel Studio v3.7</title>
     <style>
         :root { --font-size: 1.15rem; --paragraph-margin: 10px; }
         body { margin: 0; display: flex; background: #1a1a1a; color: #d4d4d4; font-family: 'Pretendard', sans-serif; overflow: hidden; position: fixed; width: 100vw; height: 100vh; }
-        
-        /* 사이드바 */
         .sidebar { width: 280px; height: 100vh; background: #111; border-right: 1px solid #333; padding: 20px; display: flex; flex-direction: column; box-sizing: border-box; transition: transform 0.3s ease; z-index: 1000; }
         @media (max-width: 768px) { .sidebar { position: fixed; left: 0; top: 0; transform: translateX(-100%); } .sidebar.active { transform: translateX(0); } }
-
-        .sidebar h2 { font-size: 0.7rem; color: #444; letter-spacing: 2px; margin-bottom: 20px; text-align: center; }
         .sidebar-btns { display: flex; gap: 8px; margin-bottom: 20px; }
         .add-btn { flex: 1; padding: 10px; background: #2a2a2a; border: 1px solid #444; color: #fff; cursor: pointer; border-radius: 6px; font-size: 0.75rem; font-weight: bold; }
-
         .folder-list { flex: 1; overflow-y: auto; list-style: none; padding: 0; }
         .folder-container { margin-bottom: 10px; }
         .folder-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #1a1a1a; border-radius: 6px; cursor: pointer; color: #bbb; font-weight: bold; font-size: 0.85rem; }
@@ -26,26 +21,20 @@
         .chapter-item { flex: 1; padding: 8px 10px; cursor: pointer; font-size: 0.8rem; color: #777; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .chapter-item-container.active .chapter-item { color: #fff; }
         .del-icon { padding: 0 8px; color: #333; cursor: pointer; font-size: 0.8rem; }
-
-        /* 메인 영역 */
         .main-content { flex: 1; height: 100vh; overflow-y: scroll; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; align-items: center; padding: 40px 20px 150px 20px; box-sizing: border-box; }
         .editor-container { width: 100%; max-width: 800px; }
         #chapter-title { width: 100%; font-size: 1.6rem; border: none; background: transparent; color: #fff; outline: none; margin-bottom: 30px; font-weight: bold; }
         #editor { width: 100%; min-height: 70vh; border: none; outline: none; font-size: var(--font-size); line-height: 1.6em !important; color: #d4d4d4; white-space: pre-wrap; }
         #editor div, #editor p { margin: var(--paragraph-margin) 0 !important; line-height: 1.6em !important; }
-
         .toolbar { display: flex; gap: 8px; margin-bottom: 20px; justify-content: flex-end; }
         .tool-btn { background: #222; border: 1px solid #333; color: #888; padding: 6px 12px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; }
-        .tool-btn:hover { background: #333; color: #fff; }
-
         .status-bar { position: fixed; bottom: 0; left: 280px; right: 0; background: #111; border-top: 1px solid #222; z-index: 900; }
         @media (max-width: 768px) { .status-bar { left: 0; } }
         .progress-container { height: 4px; background: #222; width: 100%; }
         #progress-bar { height: 100%; background: #4a90e2; width: 0%; transition: 0.3s; }
         .status-info { padding: 10px 25px; display: flex; justify-content: space-between; font-size: 0.7rem; color: #555; align-items: center; }
         .setting-group { display: flex; gap: 12px; }
-        .setting-link { cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
-        
+        .setting-link { cursor: pointer; text-decoration: underline; }
         .menu-toggle { position: fixed; top: 15px; left: 15px; z-index: 2000; background: #222; color: white; border: none; padding: 10px 15px; border-radius: 8px; display: none; }
         @media (max-width: 768px) { .menu-toggle { display: block; } }
     </style>
@@ -53,9 +42,8 @@
 <body>
 
     <button class="menu-toggle" onclick="toggleSidebar()">☰ 메뉴</button>
-
     <div class="sidebar" id="sidebar">
-        <h2>CLOUD STUDIO</h2>
+        <h2 onclick="location.reload()" style="cursor:pointer">CLOUD STUDIO ↻</h2>
         <div class="sidebar-btns">
             <button class="add-btn" onclick="addNewFolder()">📁 새 작품</button>
             <button class="add-btn" onclick="addNewChapter()">📝 에피소드</button>
@@ -84,35 +72,38 @@
                 <span class="setting-link" onclick="setMargin()">문단: <span id="display-margin">10</span></span>
             </div>
             <div id="word-count">0자</div>
-            <div id="sync-status">연결됨</div>
+            <div id="sync-status" style="color:#ff4d4d">연결 확인 중...</div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, onSnapshot, query, orderBy, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        const firebaseConfig = { /* 여기에 Firebase 설정을 입력하세요 */
- apiKey: "AIzaSyC4FjTYr8xxPH9y7H13h8EzIf-CxKb8QkI",
+        // 🔥 본인의 Firebase 설정을 여기에 정확히 입력하세요!
+        const firebaseConfig = {
+         apiKey: "AIzaSyC4FjTYr8xxPH9y7H13h8EzIf-CxKb8QkI",
   authDomain: "my-typi-app.firebaseapp.com",
   projectId: "my-typi-app",
   storageBucket: "my-typi-app.firebasestorage.app",
   messagingSenderId: "793573516752",
   appId: "1:793573516752:web:2b3d20a8c432a0b5d445d5"
- };
+        };
+
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        let currentChapterId = '';
+        let currentChapterId = localStorage.getItem('lastChapterId') || '';
         let currentFolderId = localStorage.getItem('lastFolderId') || '';
         let goalWords = localStorage.getItem('novelGoalWords') || 5000;
         let fontSize = localStorage.getItem('novelFontSize') || 1.15;
         let paragraphMargin = localStorage.getItem('novelMargin') || 10;
         let lastSavedContent = "";
+        let isTyping = false; // 타이핑 중 덮어쓰기 방지 보호막
 
         const editor = document.getElementById('editor');
         const titleInput = document.getElementById('chapter-title');
-        const sidebar = document.getElementById('sidebar');
+        const syncStatus = document.getElementById('sync-status');
 
         function applySettings() {
             document.documentElement.style.setProperty('--font-size', fontSize + 'rem');
@@ -123,75 +114,52 @@
             updateWordCount();
         }
 
-        // --- 굵은 글씨 제목 자동 추출 기능 ---
-        function extractBoldTitle() {
-            const boldElements = editor.querySelectorAll('b, strong, [style*="font-weight: bold"], [style*="font-weight: 700"]');
-            if (boldElements.length > 0) {
-                // 맨 마지막에 위치한 굵은 글씨를 제목으로 사용
-                const lastBold = boldElements[boldElements.length - 1];
-                const boldText = lastBold.innerText.trim();
-                if (boldText) {
-                    titleInput.value = boldText;
-                    return boldText;
-                }
-            }
-            return titleInput.value;
-        }
-
-        window.copyAllText = () => {
-            const text = editor.innerText;
-            navigator.clipboard.writeText(text).then(() => alert("복사되었습니다!"));
-        };
-
-        window.addNewFolder = async () => {
-            const name = prompt("새 작품 이름:");
-            if (!name) return;
-            const id = 'fd' + Date.now();
-            await setDoc(doc(db, "folders", id), { name, createdAt: Date.now() });
-            currentFolderId = id;
-            localStorage.setItem('lastFolderId', id);
-        };
-
-        window.addNewChapter = async () => {
-            if (!currentFolderId) { alert("작품을 선택해주세요."); return; }
-            const id = 'ch' + Date.now();
-            await setDoc(doc(db, "myNovels", id), { title: "새 에피소드", content: "", folderId: currentFolderId, createdAt: Date.now() });
-            loadChapter(id);
-        };
-
-        // 데이터 동기화 (미분류 원고 포함 로직)
+        // --- 실시간 연동 및 보호 로직 ---
         onSnapshot(query(collection(db, "folders"), orderBy("createdAt", "desc")), (fSnap) => {
             onSnapshot(query(collection(db, "myNovels"), orderBy("createdAt", "asc")), (cSnap) => {
+                syncStatus.innerText = "☁️ 실시간 연동됨";
+                syncStatus.style.color = "#4ade80";
+                
                 const listUI = document.getElementById('folder-list');
                 listUI.innerHTML = '';
 
                 // 미분류 섹션
                 const unclassified = [];
                 cSnap.forEach(d => { if(!d.data().folderId) unclassified.push({id:d.id, ...d.data()}); });
-                if(unclassified.length > 0) {
-                    const fDiv = createFolderUI("📂 미분류 원고", "unclassified", unclassified);
-                    listUI.appendChild(fDiv);
-                }
+                if(unclassified.length > 0) listUI.appendChild(createFolderUI("📂 미분류 원고", "unclassified", unclassified));
 
                 fSnap.forEach((fDoc) => {
-                    const fId = fDoc.id;
                     const chapters = [];
-                    cSnap.forEach(d => { if(d.data().folderId === fId) chapters.push({id:d.id, ...d.data()}); });
-                    const fDiv = createFolderUI("📂 " + fDoc.data().name, fId, chapters);
-                    listUI.appendChild(fDiv);
+                    cSnap.forEach(d => { if(d.data().folderId === fDoc.id) chapters.push({id:d.id, ...d.data()}); });
+                    listUI.appendChild(createFolderUI("📂 " + fDoc.data().name, fDoc.id, chapters));
                 });
+                
+                // 새로고침 시 마지막 작업 글 로드
+                if(currentChapterId && editor.innerHTML === "") loadChapter(currentChapterId);
             });
+        }, (error) => {
+            syncStatus.innerText = "❌ 연결 오류 (설정 확인)";
+            syncStatus.style.color = "#ff4d4d";
         });
+
+        async function loadChapter(id) {
+            if (isTyping) return; // 타이핑 중에는 강제 로드 방지
+            currentChapterId = id;
+            localStorage.setItem('lastChapterId', id);
+            const snap = await getDoc(doc(db, "myNovels", id));
+            if (snap.exists()) {
+                titleInput.value = snap.data().title || "제목 없음";
+                editor.innerHTML = snap.data().content || "";
+                lastSavedContent = snap.data().content || "";
+                updateWordCount();
+            }
+        }
 
         function createFolderUI(name, id, chapters) {
             const div = document.createElement('div');
             div.className = 'folder-container';
-            div.innerHTML = `<div class="folder-header" onclick="toggleFolder('${id}')">
-                <span>${name}</span>
-                ${id !== 'unclassified' ? `<span class="del-icon" onclick="deleteFolder('${id}', event)">×</span>` : ''}
-            </div>
+            div.innerHTML = `<div class="folder-header" onclick="toggleFolder('${id}')"><span>${name}</span></div>
             <ul id="list-${id}" class="chapter-list ${currentFolderId !== id ? 'hidden' : ''}"></ul>`;
-            
             const ul = div.querySelector('ul');
             chapters.forEach(c => {
                 const li = document.createElement('li');
@@ -203,59 +171,73 @@
             return div;
         }
 
-        window.toggleFolder = (id) => {
-            currentFolderId = id;
-            localStorage.setItem('lastFolderId', id);
-            document.querySelectorAll('.chapter-list').forEach(el => el.classList.add('hidden'));
-            document.getElementById('list-' + id).classList.remove('hidden');
-        };
-
-        async function loadChapter(id) {
-            currentChapterId = id;
-            const snap = await getDoc(doc(db, "myNovels", id));
-            if (snap.exists()) {
-                titleInput.value = snap.data().title;
-                editor.innerHTML = snap.data().content;
-                lastSavedContent = snap.data().content;
-                updateWordCount();
-            }
-        }
-
+        // --- 자동 저장 로직 (굵은 글씨 제목 연동 포함) ---
         let saveTimeout;
         const autoSave = () => {
             if(!currentChapterId) return;
+            isTyping = true;
             syncStatus.innerText = "☁️ 저장 중...";
             
-            // 저장 전 굵은 글씨 제목 추출
-            const finalTitle = extractBoldTitle();
-
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(async () => {
+                // 굵은 글씨 제목 추출
+                const boldElements = editor.querySelectorAll('b, strong, [style*="font-weight: bold"]');
+                let finalTitle = titleInput.value;
+                if (boldElements.length > 0) finalTitle = boldElements[boldElements.length - 1].innerText.trim();
+
                 try {
                     await setDoc(doc(db, "myNovels", currentChapterId), { 
                         title: finalTitle, 
                         content: editor.innerHTML, 
                         updatedAt: Date.now() 
                     }, { merge: true });
-                    syncStatus.innerText = "☁️ 저장됨"; updateWordCount();
-                } catch (e) { syncStatus.innerText = "❌ 실패"; }
-            }, 800);
+                    syncStatus.innerText = "☁️ 저장됨";
+                    isTyping = false;
+                    updateWordCount();
+                } catch (e) { 
+                    syncStatus.innerText = "❌ 저장 실패"; 
+                    console.error(e);
+                }
+            }, 1000);
         };
 
+        // --- 기타 기능 (복사, 설정 등) ---
+        window.copyAllText = () => {
+            navigator.clipboard.writeText(editor.innerText).then(() => alert("복사되었습니다!"));
+        };
+        window.addNewFolder = async () => {
+            const name = prompt("새 작품 이름:");
+            if (!name) return;
+            const id = 'fd' + Date.now();
+            await setDoc(doc(db, "folders", id), { name, createdAt: Date.now() });
+            currentFolderId = id;
+            localStorage.setItem('lastFolderId', id);
+        };
+        window.addNewChapter = async () => {
+            if (!currentFolderId) return alert("작품을 선택해주세요.");
+            const id = 'ch' + Date.now();
+            await setDoc(doc(db, "myNovels", id), { title: "새 에피소드", content: "", folderId: currentFolderId, createdAt: Date.now() });
+            loadChapter(id);
+        };
+        window.toggleFolder = (id) => {
+            currentFolderId = id;
+            localStorage.setItem('lastFolderId', id);
+            document.querySelectorAll('.chapter-list').forEach(el => el.classList.add('hidden'));
+            document.getElementById('list-' + id).classList.remove('hidden');
+        };
+        async function deleteChapter(id, e) { e.stopPropagation(); if(confirm("삭제할까요?")) await deleteDoc(doc(db, "myNovels", id)); }
         function updateWordCount() {
             const count = editor.innerText.length;
-            const percent = Math.min((count / goalWords) * 100, 100);
             document.getElementById('word-count').innerText = `${count.toLocaleString()}자`;
-            document.getElementById('progress-bar').style.width = percent + "%";
+            document.getElementById('progress-bar').style.width = Math.min((count/goalWords)*100, 100) + "%";
         }
-
-        window.deleteFolder = async (id, e) => { e.stopPropagation(); if(confirm("폴더를 삭제할까요?")) await deleteDoc(doc(db, "folders", id)); };
-        window.deleteChapter = async (id, e) => { e.stopPropagation(); if(confirm("삭제할까요?")) await deleteDoc(doc(db, "myNovels", id)); };
-        window.setGoal = () => { const val = prompt("목표:", goalWords); if(val){ goalWords=val; localStorage.setItem('novelGoalWords', val); applySettings(); } };
-        window.setFontSize = () => { const val = prompt("크기:", fontSize); if(val){ fontSize=val; localStorage.setItem('novelFontSize', val); applySettings(); } };
-        window.setMargin = () => { const val = prompt("여백:", paragraphMargin); if(val){ paragraphMargin=val; localStorage.setItem('novelMargin', val); applySettings(); } };
+        window.setGoal = () => { const v=prompt("목표:", goalWords); if(v){ goalWords=v; localStorage.setItem('novelGoalWords', v); applySettings(); } };
+        window.setFontSize = () => { const v=prompt("글자크기:", fontSize); if(v){ fontSize=v; localStorage.setItem('novelFontSize', v); applySettings(); } };
+        window.setMargin = () => { const v=prompt("문단여백:", paragraphMargin); if(v){ paragraphMargin=v; localStorage.setItem('novelMargin', v); applySettings(); } };
+        window.exportText = () => { const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([editor.innerText],{type:'text/plain'})); a.download=`${titleInput.value}.txt`; a.click(); };
         window.restoreVersion = () => { if(confirm("복구할까요?")) { editor.innerHTML = lastSavedContent; updateWordCount(); } };
-        window.exportText = () => { const blob = new Blob([editor.innerText], {type:'text/plain'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`${titleInput.value}.txt`; a.click(); };
+        window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('active');
+        window.closeSidebar = () => { if(window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('active'); };
 
         editor.addEventListener('input', autoSave);
         titleInput.addEventListener('input', autoSave);
