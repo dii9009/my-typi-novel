@@ -164,7 +164,7 @@
         // 2. 데이터 연동
         onSnapshot(query(collection(db, "folders"), orderBy("createdAt", "asc")), (fSnap) => {
             onSnapshot(query(collection(db, "myNovels"), orderBy("createdAt", "asc")), (cSnap) => {
-                syncStatus.innerText = "☁️ 실시간 연동됨"; syncStatus.style.color = "#4ade80";
+                syncStatus.innerText = "☁️ 연동됨"; syncStatus.style.color = "#4ade80";
                 const listUI = document.getElementById('folder-list'); listUI.innerHTML = '';
                 const chapters = []; cSnap.forEach(d => chapters.push({id: d.id, ...d.data()}));
                 
