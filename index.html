@@ -14,7 +14,7 @@
         #lock-screen input { padding: 15px; width: 220px; border-radius: 8px; border: 1px solid #333; background: #222; color: white; font-size: 1.2rem; text-align: center; outline: none; }
         #lock-screen button { margin-top: 15px; padding: 10px 40px; background: #4a90e2; border: none; color: white; border-radius: 6px; cursor: pointer; font-weight: bold; }
 
-        /* 사이드바 및 탭 */
+        /* 사이드바 및 탭 시스템 */
         .sidebar { width: 280px; min-width: 280px; height: 100%; background: #111; border-right: 1px solid #333; padding: 20px; display: flex; flex-direction: column; box-sizing: border-box; z-index: 1000; }
         @media (max-width: 768px) { .sidebar { position: fixed; left: 0; transform: translateX(-100%); transition: 0.3s; } .sidebar.active { transform: translateX(0); } }
         
@@ -25,7 +25,7 @@
         .sidebar-content { flex: 1; overflow-y: auto; }
         .hidden { display: none !important; }
 
-        /* 폴더/에피소드 리스트 */
+        /* 리스트 스타일 */
         .folder-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 8px; cursor: pointer; color: #bbb; font-weight: bold; font-size: 0.85rem; }
         .folder-header.open { color: #4a90e2; }
         .chapter-list { list-style: none; padding-left: 10px; margin: 5px 0; }
@@ -33,13 +33,13 @@
         .chapter-item-container.active { background: #222; border-left: 3px solid #4a90e2; }
         .chapter-item { flex: 1; padding: 10px; cursor: pointer; font-size: 0.85rem; color: #777; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-        /* 에디터 */
+        /* 메인 영역 */
         .main-content { flex: 1; height: 100%; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; align-items: center; padding: 40px 20px 160px 20px; box-sizing: border-box; background: #1a1a1a; position: relative; }
         .editor-container { width: 100%; max-width: 800px; }
         #chapter-title { width: 100%; font-size: 1.8rem; border: none; background: transparent; color: #fff; outline: none; margin-bottom: 30px; font-weight: bold; }
         #editor { width: 100%; min-height: 70vh; font-size: var(--font-size); line-height: 1.8em; color: #d4d4d4; outline: none; white-space: pre-wrap; word-break: break-all; }
 
-        /* 상태바 */
+        /* 하단바 */
         .status-bar { position: fixed; bottom: 0; left: 280px; right: 0; background: #111; border-top: 1px solid #222; z-index: 998; }
         @media (max-width: 768px) { .status-bar { left: 0; } }
         .status-info { padding: 12px 25px; display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; }
@@ -68,10 +68,10 @@
             
             <div id="content-epi" class="sidebar-content">
                 <div style="display:flex; gap:8px; margin-bottom:20px;">
-                    <button class="add-btn" onclick="addNewFolder()" style="flex:1; padding:10px; background:#2a2a2a; border:1px solid #444; color:#fff; border-radius:6px; font-size:0.75rem;">📁 폴더</button>
-                    <button class="add-btn" onclick="addNewChapter()" style="flex:1; padding:10px; background:#2a2a2a; border:1px solid #444; color:#fff; border-radius:6px; font-size:0.75rem;">📝 에피</button>
+                    <button onclick="addNewFolder()" style="flex:1; padding:10px; background:#2a2a2a; border:1px solid #444; color:#fff; border-radius:6px; font-size:0.75rem;">📁 폴더</button>
+                    <button onclick="addNewChapter()" style="flex:1; padding:10px; background:#2a2a2a; border:1px solid #444; color:#fff; border-radius:6px; font-size:0.75rem;">📝 에피</button>
                 </div>
-                <div id="folder-list"></div>
+                <div id="folder-list">연결 중...</div>
             </div>
 
             <div id="content-world" class="sidebar-content hidden">
@@ -84,6 +84,7 @@
                 <div style="display:flex; gap:8px; margin-bottom:20px; justify-content:flex-end;">
                     <button onclick="copyAllText()" style="background:none; border:1px solid #333; color:#4a90e2; padding:6px 12px; border-radius:4px; font-size:0.75rem; cursor:pointer;">📋 복사</button>
                     <button onclick="restoreVersion()" style="background:none; border:1px solid #333; color:#888; padding:6px 12px; border-radius:4px; font-size:0.75rem; cursor:pointer;">⏳ 복구</button>
+                    <button onclick="exportText()" style="background:none; border:1px solid #333; color:#888; padding:6px 12px; border-radius:4px; font-size:0.75rem; cursor:pointer;">💾 TXT</button>
                 </div>
                 <input type="text" id="chapter-title" placeholder="제목을 입력하세요">
                 <div id="editor" contenteditable="true" spellcheck="true"></div>
@@ -110,8 +111,9 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, onSnapshot, query, orderBy, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // 🔥 본인의 설정을 입력하세요
         const firebaseConfig = {
-             apiKey: "AIzaSyC4FjTYr8xxPH9y7H13h8EzIf-CxKb8QkI",
+            apiKey: "AIzaSyC4FjTYr8xxPH9y7H13h8EzIf-CxKb8QkI",
   authDomain: "my-typi-app.firebaseapp.com",
   projectId: "my-typi-app",
   storageBucket: "my-typi-app.firebasestorage.app",
@@ -134,7 +136,6 @@
         let lastSavedContent = ""; 
         let settings = { goalWords: 5000, fontSize: 1.15, studioPw: "0000" };
 
-        // 1. 설정 및 암호
         onSnapshot(doc(db, "app_settings", "global_v1"), (sDoc) => {
             if (sDoc.exists()) { settings = { ...settings, ...sDoc.data() }; applySettings(); }
         });
@@ -143,41 +144,27 @@
             if(document.getElementById('pw-input').value === settings.studioPw) {
                 document.getElementById('lock-screen').style.display = 'none';
                 sessionStorage.setItem('isStudioAuth', 'true');
-                startSync();
+                startApp();
             } else { alert("비밀번호 불일치"); }
         };
         if(sessionStorage.getItem('isStudioAuth') === 'true') {
             document.getElementById('lock-screen').style.display = 'none';
-            startSync();
+            startApp();
         }
 
         function applySettings() {
             document.documentElement.style.setProperty('--font-size', settings.fontSize + 'rem');
             document.getElementById('display-goal').innerText = parseInt(settings.goalWords).toLocaleString();
             document.getElementById('display-font').innerText = settings.fontSize;
+            updateWordCount();
         }
 
-        // 2. [핵심] 탭 전환 및 지연 로딩
-        window.switchTab = async (type) => {
-            document.getElementById('tab-epi').classList.toggle('active', type === 'epi');
-            document.getElementById('tab-world').classList.toggle('active', type === 'world');
-            document.getElementById('content-epi').classList.toggle('hidden', type !== 'epi');
-            document.getElementById('content-world').classList.toggle('hidden', type !== 'world');
-            
-            if(type === 'world' && worldMemo.value === "") {
-                const wSnap = await getDoc(doc(db, "app_settings", "world_memo"));
-                if(wSnap.exists()) worldMemo.value = wSnap.data().content;
-            }
-        };
-
-        // 3. 데이터 동기화 (v5.52 엔진)
-        function startSync() {
+        function startApp() {
             onSnapshot(query(collection(db, "folders"), orderBy("createdAt", "asc")), (fSnap) => {
                 onSnapshot(query(collection(db, "myNovels"), orderBy("createdAt", "asc")), (cSnap) => {
                     syncStatus.innerText = "☁️ 연동됨"; syncStatus.style.color = "#4ade80";
                     const listUI = document.getElementById('folder-list'); listUI.innerHTML = '';
                     const chapters = []; cSnap.forEach(d => chapters.push({id: d.id, ...d.data()}));
-                    
                     const unclassified = chapters.filter(c => !c.folderId);
                     if(unclassified.length > 0) listUI.appendChild(renderFolderUI("📂 미분류 원고", "none", unclassified));
                     fSnap.forEach(fDoc => {
@@ -188,6 +175,17 @@
             });
         }
 
+        window.switchTab = async (type) => {
+            document.getElementById('tab-epi').classList.toggle('active', type === 'epi');
+            document.getElementById('tab-world').classList.toggle('active', type === 'world');
+            document.getElementById('content-epi').classList.toggle('hidden', type !== 'epi');
+            document.getElementById('content-world').classList.toggle('hidden', type !== 'world');
+            if(type === 'world' && worldMemo.value === "") {
+                const wSnap = await getDoc(doc(db, "app_settings", "world_memo"));
+                if(wSnap.exists()) worldMemo.value = wSnap.data().content;
+            }
+        };
+
         function renderFolderUI(name, id, chapters) {
             const div = document.createElement('div');
             const isOpen = (currentFolderId === id);
@@ -196,7 +194,7 @@
             const ul = div.querySelector('ul');
             chapters.forEach(c => {
                 const li = document.createElement('li'); li.className = `chapter-item-container ${c.id === currentChapterId ? 'active' : ''}`;
-                li.innerHTML = `<div class="chapter-item">${c.title || '제목 없음'}</div>`;
+                li.innerHTML = `<div class="chapter-item">${c.title || '제목 없음'}</div><div style="padding:0 10px; opacity:0.3;" onclick="deleteChapter('${c.id}', event)">×</div>`;
                 li.onclick = () => { isTyping = false; loadChapter(c.id); };
                 ul.appendChild(li);
             });
@@ -219,7 +217,6 @@
             }
         }
 
-        // 4. 저장 로직 (디바운싱 1초)
         let saveTimer;
         const processSave = (type) => {
             isTyping = true; syncStatus.innerText = "☁️ 저장 중..."; syncStatus.style.color = "#ff4d4d";
@@ -243,13 +240,28 @@
         editor.addEventListener('input', () => { processSave('epi'); updateWordCount(); });
         worldMemo.addEventListener('input', () => processSave('world'));
 
-        // 기타 기능
+        // --- TXT 내보내기 기능 복구 ---
+        window.exportText = () => {
+            const a = document.createElement('a');
+            const blob = new Blob([editor.innerText], { type: 'text/plain' });
+            a.href = URL.createObjectURL(blob);
+            a.download = `${titleInput.value || '제목없음'}.txt`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+        };
+
         window.setGoal = () => { const v = prompt("목표 글자수:", settings.goalWords); if(v) setDoc(doc(db, "app_settings", "global_v1"), { goalWords: parseInt(v) }, { merge: true }); };
         window.setFontSize = () => { const v = prompt("글자 크기:", settings.fontSize); if(v) setDoc(doc(db, "app_settings", "global_v1"), { fontSize: parseFloat(v) }, { merge: true }); };
         window.addNewFolder = async () => { const n = prompt("새 폴더:"); if(n) await setDoc(doc(db, "folders", 'fd'+Date.now()), { name: n, createdAt: Date.now() }); };
         window.addNewChapter = async () => { if(currentFolderId === 'none') return alert("폴더 선택!"); const id = 'ch'+Date.now(); await setDoc(doc(db, "myNovels", id), { title: "새 에피소드", content: "", folderId: currentFolderId, createdAt: Date.now() }); loadChapter(id); };
+        window.deleteChapter = async (id, e) => { e.stopPropagation(); if(confirm("삭제?")) await deleteDoc(doc(db, "myNovels", id)); };
+        window.restoreVersion = () => { if(confirm("복구?")) { editor.innerHTML = lastSavedContent; updateWordCount(); } };
         window.copyAllText = () => { navigator.clipboard.writeText(editor.innerText).then(() => alert("복사됨!")); };
-        window.updateWordCount = () => { const cnt = (editor.innerText || "").trim().length; document.getElementById('word-count').innerText = cnt.toLocaleString() + '자'; };
+        window.updateWordCount = () => { 
+            const cnt = (editor.innerText || "").replace(/\r\n/g, "\n").trim().length; 
+            document.getElementById('word-count').innerText = cnt.toLocaleString() + '자';
+            document.getElementById('progress-bar').style.width = Math.min((cnt / settings.goalWords) * 100, 100) + "%";
+        };
         window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('active');
         window.closeSidebar = () => document.getElementById('sidebar').classList.remove('active');
     </script>
