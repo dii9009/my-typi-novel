@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Cloud Studio v5.2</title>
+    <title>Cloud Studio v5.3</title>
     <style>
         :root { --font-size: 1.15rem; --paragraph-margin: 10px; }
 
-        /* 1. 레이아웃 고정: PC와 아이폰 모두에서 상하좌우 흔들림 방지 */
+        /* 1. 레이아웃 고정 */
         html, body {
             margin: 0; padding: 0; width: 100%; height: 100%;
             background: #1a1a1a; color: #d4d4d4;
@@ -34,7 +34,7 @@
             color: white; border-radius: 6px; cursor: pointer; font-weight: bold;
         }
 
-        /* 3. 사이드바 (PC 고정, 모바일 슬라이드) */
+        /* 3. 사이드바 */
         .sidebar { 
             width: 280px; min-width: 280px; height: 100%; background: #111; 
             border-right: 1px solid #333; padding: 20px; display: flex; 
@@ -44,11 +44,22 @@
             .sidebar { position: fixed; left: 0; transform: translateX(-100%); transition: 0.3s; } 
             .sidebar.active { transform: translateX(0); } 
         }
-        .sidebar h2 { font-size: 0.75rem; color: #444; letter-spacing: 2px; text-align: center; margin-bottom: 20px; }
         .sidebar-btns { display: flex; gap: 8px; margin-bottom: 20px; }
         .add-btn { flex: 1; padding: 10px; background: #2a2a2a; border: 1px solid #444; color: #fff; border-radius: 6px; font-size: 0.75rem; font-weight: bold; cursor: pointer; }
 
-        /* 4. 메인 원고 영역 (PC 화면 사라짐 방지) */
+        .folder-list { flex: 1; overflow-y: auto; list-style: none; padding: 0; }
+        .folder-container { margin-bottom: 12px; border-bottom: 1px solid #222; padding-bottom: 8px; }
+        .folder-header { display: flex; justify-content: space-between; align-items: center; padding: 8px; cursor: pointer; color: #bbb; font-weight: bold; font-size: 0.85rem; }
+        .folder-header:hover { background: #1a1a1a; border-radius: 4px; }
+        .chapter-list { list-style: none; padding-left: 10px; margin: 5px 0; }
+        .chapter-list.hidden { display: none; }
+        .chapter-item-container { display: flex; justify-content: space-between; align-items: center; border-radius: 4px; margin-bottom: 2px; }
+        .chapter-item-container.active { background: #222; border-left: 3px solid #4a90e2; }
+        .chapter-item { flex: 1; padding: 10px; cursor: pointer; font-size: 0.85rem; color: #777; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .chapter-item-container.active .chapter-item { color: #fff; font-weight: bold; }
+        .del-icon { padding: 0 10px; color: #333; cursor: pointer; font-size: 0.9rem; }
+
+        /* 4. 메인 콘텐츠 */
         .main-content {
             flex: 1; height: 100%; overflow-y: auto; overflow-x: hidden;
             -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; 
@@ -56,28 +67,16 @@
             background: #1a1a1a; position: relative; touch-action: pan-y;
         }
         .editor-container { width: 100%; max-width: 800px; }
+        #chapter-title { width: 100%; font-size: 1.8rem; border: none; background: transparent; color: #fff; outline: none; margin-bottom: 30px; font-weight: bold; }
+        #editor { width: 100%; min-height: 70vh; font-size: var(--font-size); line-height: 1.8em; color: #d4d4d4; outline: none; white-space: pre-wrap; word-break: break-all; }
 
-        #chapter-title { 
-            width: 100%; font-size: 1.8rem; border: none; background: transparent; 
-            color: #fff; outline: none; margin-bottom: 30px; font-weight: bold; 
-        }
-        #editor { 
-            width: 100%; min-height: 70vh; font-size: var(--font-size); 
-            line-height: 1.8em; color: #d4d4d4; outline: none; white-space: pre-wrap; word-break: break-all;
-        }
-
-        /* 5. 툴바 및 하단 상태바 */
+        /* 5. 툴바 및 하단바 */
         .toolbar { display: flex; gap: 8px; margin-bottom: 20px; justify-content: flex-end; }
         .tool-btn { background: none; border: 1px solid #333; padding: 6px 12px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; }
-        
-        .status-bar { 
-            position: fixed; bottom: 0; left: 280px; right: 0; 
-            background: #111; border-top: 1px solid #222; z-index: 998; 
-        }
+        .status-bar { position: fixed; bottom: 0; left: 280px; right: 0; background: #111; border-top: 1px solid #222; z-index: 998; }
         @media (max-width: 768px) { .status-bar { left: 0; } }
         .status-info { padding: 12px 25px; display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; }
         .setting-link { cursor: pointer; text-decoration: underline; margin-right: 10px; color: #888; }
-        
         .menu-toggle { position: fixed; top: 15px; left: 15px; z-index: 2000; background: #222; color: white; border: none; padding: 10px 15px; border-radius: 8px; display: none; }
         @media (max-width: 768px) { .menu-toggle { display: block; } }
     </style>
@@ -94,12 +93,12 @@
     
     <div class="app-container">
         <div class="sidebar" id="sidebar">
-            <h2 onclick="location.reload()" style="cursor:pointer">CLOUD STUDIO</h2>
+            <h2 onclick="location.reload()" style="cursor:pointer; font-size:0.7rem; color:#444; text-align:center; letter-spacing:2px; margin-bottom:20px;">CLOUD STUDIO</h2>
             <div class="sidebar-btns">
                 <button class="add-btn" onclick="addNewFolder()">📁 폴더</button>
                 <button class="add-btn" onclick="addNewChapter()">📝 에피</button>
             </div>
-            <div id="folder-list" style="flex:1; overflow-y:auto;"></div>
+            <div id="folder-list" class="folder-list"></div>
         </div>
 
         <div class="main-content" onclick="closeSidebar()">
@@ -126,7 +125,7 @@
             <div style="display:flex; align-items:center; gap:15px;">
                 <div id="word-count">0자</div>
                 <div id="sync-status" style="font-weight:bold;">연결 중...</div>
-                <span style="color:#333; font-weight:bold;">v5.2</span>
+                <span style="color:#333; font-weight:bold;">v5.3</span>
             </div>
         </div>
     </div>
@@ -135,15 +134,15 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // 🔥 본인의 설정을 입력하세요
-        const firebaseConfig = {
-            apiKey: "AIzaSyC4FjTYr8xxPH9y7H13h8EzIf-CxKb8QkI",
+        const firebaseConfig = { /* 본인의 설정을 입력하세요 */
+
+ apiKey: "AIzaSyC4FjTYr8xxPH9y7H13h8EzIf-CxKb8QkI",
   authDomain: "my-typi-app.firebaseapp.com",
   projectId: "my-typi-app",
   storageBucket: "my-typi-app.firebasestorage.app",
   messagingSenderId: "793573516752",
   appId: "1:793573516752:web:2b3d20a8c432a0b5d445d5"
-        };
+ };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -158,7 +157,6 @@
         const editor = document.getElementById('editor');
         const titleInput = document.getElementById('chapter-title');
 
-        // 1. 설정 및 암호 동기화
         onSnapshot(doc(db, "app_settings", "global_v1"), (sDoc) => {
             if (sDoc.exists()) { settings = { ...settings, ...sDoc.data() }; applySettings(); }
             else { setDoc(doc(db, "app_settings", "global_v1"), settings); }
@@ -168,7 +166,7 @@
             if(document.getElementById('pw-input').value === settings.studioPw) {
                 document.getElementById('lock-screen').style.display = 'none';
                 sessionStorage.setItem('isStudioAuth', 'true');
-            } else { alert("비밀번호가 틀렸습니다."); }
+            } else { alert("Wrong password"); }
         };
         if(sessionStorage.getItem('isStudioAuth') === 'true') document.getElementById('lock-screen').style.display = 'none';
 
@@ -179,12 +177,11 @@
             updateWordCount();
         }
 
-        // 2. 데이터 연동 (asc 생성순 정렬로 새 글이 밑으로 가게 함)
+        // --- 데이터 동기화 (Folders & Chapters) ---
         onSnapshot(query(collection(db, "folders"), orderBy("createdAt", "asc")), (fSnap) => {
             onSnapshot(query(collection(db, "myNovels"), orderBy("createdAt", "asc")), (cSnap) => {
                 syncStatus.innerText = "☁️ 실시간 연동됨";
                 syncStatus.style.color = "#4ade80";
-                
                 const listUI = document.getElementById('folder-list');
                 listUI.innerHTML = '';
                 const chapters = [];
@@ -199,7 +196,6 @@
                     listUI.appendChild(renderFolderUI("📂 " + fDoc.data().name, fId, folderChapters));
                 });
 
-                // 자동 로딩: 현재 보고 있는 글이 없으면 첫 번째 글 로드
                 if(!isTyping) {
                     const targetId = currentChapterId || (chapters.length > 0 ? chapters[0].id : null);
                     if(targetId && (editor.innerHTML === "" || targetId !== currentChapterId)) loadChapter(targetId);
@@ -207,10 +203,23 @@
             });
         });
 
+        // --- 폴더 및 에피소드 UI 렌더링 (수정 아이콘 추가) ---
         function renderFolderUI(name, id, chapters) {
             const div = document.createElement('div');
-            div.innerHTML = `<div style="padding:10px; color:#bbb; font-weight:bold; cursor:pointer; font-size:0.85rem;" onclick="toggleFolder('${id}')">${name}</div>
-            <ul id="list-${id}" style="list-style:none; padding:0; ${currentFolderId !== id ? 'display:none' : ''}"></ul>`;
+            div.className = 'folder-container';
+            const isActualFolder = id !== 'none';
+            
+            div.innerHTML = `<div class="folder-header" onclick="toggleFolder('${id}')">
+                <span>${name}</span>
+                ${isActualFolder ? `
+                    <div style="display:flex; gap:10px;">
+                        <span onclick="renameFolder('${id}', '${name.replace('📂 ', '')}', event)" style="cursor:pointer; font-size:0.75rem; color:#555;">✏️</span>
+                        <span onclick="deleteFolder('${id}', event)" style="cursor:pointer; font-size:0.8rem; color:#333;">×</span>
+                    </div>
+                ` : ''}
+            </div>
+            <ul id="list-${id}" class="chapter-list ${currentFolderId !== id ? 'hidden' : ''}"></ul>`;
+            
             const ul = div.querySelector('ul');
             chapters.forEach(c => {
                 const li = document.createElement('li');
@@ -221,6 +230,18 @@
             });
             return div;
         }
+
+        // --- 폴더 이름 수정 함수 ---
+        window.renameFolder = async (id, currentName, e) => {
+            e.stopPropagation();
+            const newName = prompt("수정할 폴더 이름을 입력하세요:", currentName);
+            if (newName && newName !== currentName) {
+                try {
+                    await setDoc(doc(db, "folders", id), { name: newName }, { merge: true });
+                    syncStatus.innerText = "☁️ 폴더명 변경됨";
+                } catch (err) { alert("변경 실패: " + err.message); }
+            }
+        };
 
         async function loadChapter(id) {
             if(isTyping) return;
@@ -237,18 +258,15 @@
             }
         }
 
-        // 3. 지능형 자동 저장 (제목 수정 버그 해결)
+        // --- 지능형 자동 저장 ---
         let saveTimeout;
         const processSave = async (source) => {
             if(!currentChapterId) return;
             isTyping = true;
             syncStatus.innerText = "☁️ 저장 중...";
             clearTimeout(saveTimeout);
-            
             saveTimeout = setTimeout(async () => {
                 let finalTitle = titleInput.value;
-
-                // 본문 수정 시에만 굵은 글씨를 제목으로 자동 추출
                 if(source === 'editor') {
                     const bolds = editor.querySelectorAll('b, strong, [style*="font-weight: bold"]');
                     if(bolds.length > 0) {
@@ -256,11 +274,7 @@
                         titleInput.value = finalTitle;
                     }
                 }
-
-                await setDoc(doc(db, "myNovels", currentChapterId), { 
-                    title: finalTitle, content: editor.innerHTML, updatedAt: Date.now() 
-                }, { merge: true });
-                
+                await setDoc(doc(db, "myNovels", currentChapterId), { title: finalTitle, content: editor.innerHTML, updatedAt: Date.now() }, { merge: true });
                 lastSavedContent = editor.innerHTML;
                 syncStatus.innerText = "☁️ 저장됨";
                 isTyping = false;
@@ -270,12 +284,12 @@
         titleInput.addEventListener('input', () => processSave('title'));
         editor.addEventListener('input', () => { processSave('editor'); updateWordCount(); });
 
-        // 4. 복구 및 기타 기능
-        window.restoreVersion = () => { if(confirm("마지막 저장 시점으로 복구할까요?")) { editor.innerHTML = lastSavedContent; updateWordCount(); } };
+        window.restoreVersion = () => { if(confirm("복구할까요?")) { editor.innerHTML = lastSavedContent; updateWordCount(); } };
         window.addNewFolder = async () => { const name = prompt("새 폴더:"); if(!name) return; const id = 'fd' + Date.now(); await setDoc(doc(db, "folders", id), { name, createdAt: Date.now() }); currentFolderId = id; };
-        window.addNewChapter = async () => { if(!currentFolderId || currentFolderId === 'none') return alert("폴더를 먼저 선택하세요."); const id = 'ch' + Date.now(); await setDoc(doc(db, "myNovels", id), { title: "새 에피소드", content: "", folderId: currentFolderId, createdAt: Date.now() }); loadChapter(id); };
+        window.addNewChapter = async () => { if(!currentFolderId || currentFolderId === 'none') return alert("폴더 선택!"); const id = 'ch' + Date.now(); await setDoc(doc(db, "myNovels", id), { title: "새 에피소드", content: "", folderId: currentFolderId, createdAt: Date.now() }); loadChapter(id); };
         window.toggleFolder = (id) => { currentFolderId = id; localStorage.setItem('lastFolderId', id); location.reload(); };
-        window.deleteChapter = async (id, e) => { e.stopPropagation(); if(confirm("삭제하시겠습니까?")) await deleteDoc(doc(db, "myNovels", id)); };
+        window.deleteChapter = async (id, e) => { e.stopPropagation(); if(confirm("삭제?")) await deleteDoc(doc(db, "myNovels", id)); };
+        window.deleteFolder = async (id, e) => { e.stopPropagation(); if(confirm("폴더와 안의 글이 모두 삭제될 수 있습니다. 삭제할까요?")) await deleteDoc(doc(db, "folders", id)); };
         window.copyAllText = () => { navigator.clipboard.writeText(editor.innerText).then(() => alert("복사됨!")); };
         window.updateWordCount = () => { const cnt = (editor.innerText || "").replace(/\r\n/g, "\n").trim().length; document.getElementById('word-count').innerText = cnt.toLocaleString() + '자'; document.getElementById('progress-bar').style.width = Math.min((cnt / settings.goalWords) * 100, 100) + "%"; };
         window.exportText = () => { const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([editor.innerText],{type:'text/plain'})); a.download=`${titleInput.value}.txt`; a.click(); };
