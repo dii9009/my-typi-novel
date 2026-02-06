@@ -18,6 +18,10 @@
         .sidebar { width: 280px; min-width: 280px; height: 100%; background: #111; border-right: 1px solid #333; padding: 20px; display: flex; flex-direction: column; box-sizing: border-box; z-index: 1000; }
         @media (max-width: 768px) { .sidebar { position: fixed; left: 0; transform: translateX(-100%); transition: 0.3s; } .sidebar.active { transform: translateX(0); } }
         
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .sidebar-header h2 { font-size: 0.75rem; color: #444; letter-spacing: 2px; margin: 0; cursor: pointer; }
+        .refresh-btn { cursor: pointer; color: #4a90e2; font-size: 1.2rem; padding: 5px; font-weight: bold; }
+
         .tab-menu { display: flex; gap: 5px; margin-bottom: 15px; border-bottom: 1px solid #222; padding-bottom: 10px; }
         .tab-btn { flex: 1; padding: 8px; font-size: 0.7rem; background: none; border: 1px solid #333; color: #555; cursor: pointer; border-radius: 4px; }
         .tab-btn.active { background: #2a2a2a; color: #fff; border-color: #4a90e2; }
@@ -25,7 +29,7 @@
         .sidebar-content { flex: 1; overflow-y: auto; }
         .hidden { display: none !important; }
 
-        /* 리스트 스타일 */
+        /* 폴더 및 리스트 */
         .folder-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 8px; cursor: pointer; color: #bbb; font-weight: bold; font-size: 0.85rem; }
         .folder-header.open { color: #4a90e2; }
         .chapter-list { list-style: none; padding-left: 10px; margin: 5px 0; }
@@ -61,6 +65,10 @@
     
     <div class="app-container">
         <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2 onclick="location.reload()">CLOUD STUDIO</h2>
+                <span class="refresh-btn" onclick="location.reload()">↻</span>
+            </div>
             <div class="tab-menu">
                 <button class="tab-btn active" id="tab-epi" onclick="switchTab('epi')">📝 에피소드</button>
                 <button class="tab-btn" id="tab-world" onclick="switchTab('world')">🌎 설정/메모</button>
@@ -68,14 +76,14 @@
             
             <div id="content-epi" class="sidebar-content">
                 <div style="display:flex; gap:8px; margin-bottom:20px;">
-                    <button onclick="addNewFolder()" style="flex:1; padding:10px; background:#2a2a2a; border:1px solid #444; color:#fff; border-radius:6px; font-size:0.75rem;">📁 폴더</button>
-                    <button onclick="addNewChapter()" style="flex:1; padding:10px; background:#2a2a2a; border:1px solid #444; color:#fff; border-radius:6px; font-size:0.75rem;">📝 에피</button>
+                    <button onclick="addNewFolder()" style="flex:1; padding:10px; background:#2a2a2a; border:1px solid #444; color:#fff; border-radius:6px; font-size:0.75rem; font-weight:bold; cursor:pointer;">📁 폴더</button>
+                    <button onclick="addNewChapter()" style="flex:1; padding:10px; background:#2a2a2a; border:1px solid #444; color:#fff; border-radius:6px; font-size:0.75rem; font-weight:bold; cursor:pointer;">📝 에피</button>
                 </div>
-                <div id="folder-list">연결 중...</div>
+                <div id="folder-list">데이터 연결 중...</div>
             </div>
 
             <div id="content-world" class="sidebar-content hidden">
-                <textarea id="world-memo-area" style="width:100%; height:85%; background:transparent; border:none; color:#888; font-size:0.85rem; line-height:1.7; outline:none; resize:none; padding:10px; box-sizing:border-box;" placeholder="아포칼립스 세계관, 인물 설정 등을 기록하세요..."></textarea>
+                <textarea id="world-memo-area" style="width:100%; height:85%; background:transparent; border:none; color:#888; font-size:0.85rem; line-height:1.7; outline:none; resize:none; padding:10px; box-sizing:border-box;" placeholder="세계관 및 설정을 자유롭게 기록하세요..."></textarea>
             </div>
         </div>
 
@@ -93,13 +101,14 @@
     </div>
 
     <div class="status-bar">
+        <div id="progress-bar" style="height:3px; background:#4a90e2; width:0%; transition:0.3s;"></div>
         <div class="status-info">
             <div>
                 <span class="setting-btn" onclick="setGoal()">목표:<span id="display-goal">5,000</span></span>
                 <span class="setting-btn" onclick="setFontSize()">글자:<span id="display-font">1.15</span></span>
             </div>
             <div style="display:flex; align-items:center; gap:5px;">
-                <span id="last-save-time" class="save-time">기록 없음</span>
+                <span id="last-save-time" class="save-time">저장 기록 없음</span>
                 <div id="word-count" style="margin-right:10px;">0자</div>
                 <div id="sync-status" style="font-weight:bold;">대기</div>
                 <span style="color:#222; font-weight:bold; margin-left:10px;">v5.53</span>
@@ -240,7 +249,6 @@
         editor.addEventListener('input', () => { processSave('epi'); updateWordCount(); });
         worldMemo.addEventListener('input', () => processSave('world'));
 
-        // --- TXT 내보내기 기능 복구 ---
         window.exportText = () => {
             const a = document.createElement('a');
             const blob = new Blob([editor.innerText], { type: 'text/plain' });
