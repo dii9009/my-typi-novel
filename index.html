@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Cloud Studio v5.0</title>
+    <title>Cloud Studio v5.2</title>
     <style>
         :root { --font-size: 1.15rem; --paragraph-margin: 10px; }
 
-        /* 1. PC/아이폰 통합 레이아웃 (흔들림 방지 + 화면 꽉 채움) */
+        /* 1. 레이아웃 고정: PC와 아이폰 모두에서 상하좌우 흔들림 방지 */
         html, body {
             margin: 0; padding: 0; width: 100%; height: 100%;
             background: #1a1a1a; color: #d4d4d4;
@@ -44,10 +44,11 @@
             .sidebar { position: fixed; left: 0; transform: translateX(-100%); transition: 0.3s; } 
             .sidebar.active { transform: translateX(0); } 
         }
+        .sidebar h2 { font-size: 0.75rem; color: #444; letter-spacing: 2px; text-align: center; margin-bottom: 20px; }
         .sidebar-btns { display: flex; gap: 8px; margin-bottom: 20px; }
         .add-btn { flex: 1; padding: 10px; background: #2a2a2a; border: 1px solid #444; color: #fff; border-radius: 6px; font-size: 0.75rem; font-weight: bold; cursor: pointer; }
 
-        /* 4. 메인 원고 영역 */
+        /* 4. 메인 원고 영역 (PC 화면 사라짐 방지) */
         .main-content {
             flex: 1; height: 100%; overflow-y: auto; overflow-x: hidden;
             -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; 
@@ -65,7 +66,7 @@
             line-height: 1.8em; color: #d4d4d4; outline: none; white-space: pre-wrap; word-break: break-all;
         }
 
-        /* 5. 툴바 및 상태바 */
+        /* 5. 툴바 및 하단 상태바 */
         .toolbar { display: flex; gap: 8px; margin-bottom: 20px; justify-content: flex-end; }
         .tool-btn { background: none; border: 1px solid #333; padding: 6px 12px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; }
         
@@ -93,7 +94,7 @@
     
     <div class="app-container">
         <div class="sidebar" id="sidebar">
-            <h2 onclick="location.reload()" style="cursor:pointer; font-size:0.7rem; color:#444; text-align:center; letter-spacing:2px; margin-bottom:20px;">CLOUD STUDIO</h2>
+            <h2 onclick="location.reload()" style="cursor:pointer">CLOUD STUDIO</h2>
             <div class="sidebar-btns">
                 <button class="add-btn" onclick="addNewFolder()">📁 폴더</button>
                 <button class="add-btn" onclick="addNewChapter()">📝 에피</button>
@@ -125,7 +126,7 @@
             <div style="display:flex; align-items:center; gap:15px;">
                 <div id="word-count">0자</div>
                 <div id="sync-status" style="font-weight:bold;">연결 중...</div>
-                <span style="color:#333; font-weight:bold;">v5.0</span>
+                <span style="color:#333; font-weight:bold;">v5.2</span>
             </div>
         </div>
     </div>
@@ -136,7 +137,7 @@
 
         // 🔥 본인의 설정을 입력하세요
         const firebaseConfig = {
-          apiKey: "AIzaSyC4FjTYr8xxPH9y7H13h8EzIf-CxKb8QkI",
+            apiKey: "AIzaSyC4FjTYr8xxPH9y7H13h8EzIf-CxKb8QkI",
   authDomain: "my-typi-app.firebaseapp.com",
   projectId: "my-typi-app",
   storageBucket: "my-typi-app.firebasestorage.app",
@@ -157,7 +158,7 @@
         const editor = document.getElementById('editor');
         const titleInput = document.getElementById('chapter-title');
 
-        // 1. 암호 및 설정 동기화
+        // 1. 설정 및 암호 동기화
         onSnapshot(doc(db, "app_settings", "global_v1"), (sDoc) => {
             if (sDoc.exists()) { settings = { ...settings, ...sDoc.data() }; applySettings(); }
             else { setDoc(doc(db, "app_settings", "global_v1"), settings); }
@@ -167,7 +168,7 @@
             if(document.getElementById('pw-input').value === settings.studioPw) {
                 document.getElementById('lock-screen').style.display = 'none';
                 sessionStorage.setItem('isStudioAuth', 'true');
-            } else { alert("Wrong password"); }
+            } else { alert("비밀번호가 틀렸습니다."); }
         };
         if(sessionStorage.getItem('isStudioAuth') === 'true') document.getElementById('lock-screen').style.display = 'none';
 
@@ -178,31 +179,30 @@
             updateWordCount();
         }
 
-        // 2. 데이터 연동 (asc 생성순)
+        // 2. 데이터 연동 (asc 생성순 정렬로 새 글이 밑으로 가게 함)
         onSnapshot(query(collection(db, "folders"), orderBy("createdAt", "asc")), (fSnap) => {
             onSnapshot(query(collection(db, "myNovels"), orderBy("createdAt", "asc")), (cSnap) => {
                 syncStatus.innerText = "☁️ 실시간 연동됨";
                 syncStatus.style.color = "#4ade80";
                 
+                const listUI = document.getElementById('folder-list');
+                listUI.innerHTML = '';
                 const chapters = [];
                 cSnap.forEach(d => chapters.push({id: d.id, ...d.data()}));
 
-                const listUI = document.getElementById('folder-list');
-                listUI.innerHTML = '';
-                
                 const unclassified = chapters.filter(c => !c.folderId);
                 if(unclassified.length > 0) listUI.appendChild(renderFolderUI("📂 미분류 원고", "none", unclassified));
 
                 fSnap.forEach(fDoc => {
-                    const folderChapters = chapters.filter(c => c.folderId === fDoc.id);
-                    listUI.appendChild(renderFolderUI("📂 " + fDoc.data().name, fDoc.id, folderChapters));
+                    const fId = fDoc.id;
+                    const folderChapters = chapters.filter(c => c.folderId === fId);
+                    listUI.appendChild(renderFolderUI("📂 " + fDoc.data().name, fId, folderChapters));
                 });
 
+                // 자동 로딩: 현재 보고 있는 글이 없으면 첫 번째 글 로드
                 if(!isTyping) {
                     const targetId = currentChapterId || (chapters.length > 0 ? chapters[0].id : null);
-                    if(targetId && (editor.innerHTML === "" || targetId !== currentChapterId)) {
-                        loadChapter(targetId);
-                    }
+                    if(targetId && (editor.innerHTML === "" || targetId !== currentChapterId)) loadChapter(targetId);
                 }
             });
         });
@@ -214,13 +214,9 @@
             const ul = div.querySelector('ul');
             chapters.forEach(c => {
                 const li = document.createElement('li');
-                li.style.padding = "10px 15px";
-                li.style.color = c.id === currentChapterId ? "#fff" : "#777";
-                li.style.background = c.id === currentChapterId ? "#222" : "transparent";
-                li.style.borderLeft = c.id === currentChapterId ? "3px solid #4a90e2" : "none";
-                li.style.cursor = "pointer"; li.style.fontSize = "0.85rem";
+                li.style.cssText = `padding:10px 15px; color:${c.id === currentChapterId ? "#fff" : "#777"}; background:${c.id === currentChapterId ? "#222" : "transparent"}; border-left:${c.id === currentChapterId ? "3px solid #4a90e2" : "none"}; cursor:pointer; font-size:0.85rem;`;
                 li.innerHTML = `<div style="display:flex; justify-content:space-between;"><span>${c.title || '제목 없음'}</span><span onclick="deleteChapter('${c.id}', event)" style="color:#333;">×</span></div>`;
-                li.onclick = () => loadChapter(c.id);
+                li.onclick = () => { isTyping = false; loadChapter(c.id); };
                 ul.appendChild(li);
             });
             return div;
@@ -235,68 +231,57 @@
                 const data = snap.data();
                 titleInput.value = data.title;
                 editor.innerHTML = data.content;
-                lastSavedContent = data.content; // 복구를 위한 저장
+                lastSavedContent = data.content;
                 updateWordCount();
                 if(window.innerWidth <= 768) closeSidebar();
             }
         }
 
-        // 3. 자동 저장 및 복구 로직
+        // 3. 지능형 자동 저장 (제목 수정 버그 해결)
         let saveTimeout;
-        editor.addEventListener('input', () => {
+        const processSave = async (source) => {
+            if(!currentChapterId) return;
             isTyping = true;
             syncStatus.innerText = "☁️ 저장 중...";
             clearTimeout(saveTimeout);
+            
             saveTimeout = setTimeout(async () => {
-                const bolds = editor.querySelectorAll('b, strong');
-                let autoTitle = titleInput.value;
-                if(bolds.length > 0) autoTitle = bolds[bolds.length - 1].innerText.trim();
-                
+                let finalTitle = titleInput.value;
+
+                // 본문 수정 시에만 굵은 글씨를 제목으로 자동 추출
+                if(source === 'editor') {
+                    const bolds = editor.querySelectorAll('b, strong, [style*="font-weight: bold"]');
+                    if(bolds.length > 0) {
+                        finalTitle = bolds[bolds.length - 1].innerText.trim();
+                        titleInput.value = finalTitle;
+                    }
+                }
+
                 await setDoc(doc(db, "myNovels", currentChapterId), { 
-                    title: autoTitle, content: editor.innerHTML, updatedAt: Date.now() 
+                    title: finalTitle, content: editor.innerHTML, updatedAt: Date.now() 
                 }, { merge: true });
                 
-                lastSavedContent = editor.innerHTML; // 저장된 시점의 내용을 복구용으로 업데이트
+                lastSavedContent = editor.innerHTML;
                 syncStatus.innerText = "☁️ 저장됨";
                 isTyping = false;
             }, 1000);
-            updateWordCount();
-        });
-
-        window.restoreVersion = () => {
-            if(confirm("마지막 저장 시점으로 원고를 복구할까요?")) {
-                editor.innerHTML = lastSavedContent;
-                updateWordCount();
-                alert("복구되었습니다.");
-            }
         };
 
-        // 4. 기타 관리 기능
-        window.addNewFolder = async () => {
-            const name = prompt("새 폴더 이름:"); if(!name) return;
-            const id = 'fd' + Date.now();
-            await setDoc(doc(db, "folders", id), { name, createdAt: Date.now() });
-            currentFolderId = id;
-        };
-        window.addNewChapter = async () => {
-            if(!currentFolderId || currentFolderId === 'none') return alert("폴더를 먼저 선택하세요.");
-            const id = 'ch' + Date.now();
-            await setDoc(doc(db, "myNovels", id), { title: "새 에피소드", content: "", folderId: currentFolderId, createdAt: Date.now() });
-            loadChapter(id);
-        };
+        titleInput.addEventListener('input', () => processSave('title'));
+        editor.addEventListener('input', () => { processSave('editor'); updateWordCount(); });
+
+        // 4. 복구 및 기타 기능
+        window.restoreVersion = () => { if(confirm("마지막 저장 시점으로 복구할까요?")) { editor.innerHTML = lastSavedContent; updateWordCount(); } };
+        window.addNewFolder = async () => { const name = prompt("새 폴더:"); if(!name) return; const id = 'fd' + Date.now(); await setDoc(doc(db, "folders", id), { name, createdAt: Date.now() }); currentFolderId = id; };
+        window.addNewChapter = async () => { if(!currentFolderId || currentFolderId === 'none') return alert("폴더를 먼저 선택하세요."); const id = 'ch' + Date.now(); await setDoc(doc(db, "myNovels", id), { title: "새 에피소드", content: "", folderId: currentFolderId, createdAt: Date.now() }); loadChapter(id); };
         window.toggleFolder = (id) => { currentFolderId = id; localStorage.setItem('lastFolderId', id); location.reload(); };
         window.deleteChapter = async (id, e) => { e.stopPropagation(); if(confirm("삭제하시겠습니까?")) await deleteDoc(doc(db, "myNovels", id)); };
         window.copyAllText = () => { navigator.clipboard.writeText(editor.innerText).then(() => alert("복사됨!")); };
-        window.updateWordCount = () => {
-            const cnt = (editor.innerText || "").replace(/\r\n/g, "\n").trim().length;
-            document.getElementById('word-count').innerText = cnt.toLocaleString() + '자';
-            document.getElementById('progress-bar').style.width = Math.min((cnt / settings.goalWords) * 100, 100) + "%";
-        };
+        window.updateWordCount = () => { const cnt = (editor.innerText || "").replace(/\r\n/g, "\n").trim().length; document.getElementById('word-count').innerText = cnt.toLocaleString() + '자'; document.getElementById('progress-bar').style.width = Math.min((cnt / settings.goalWords) * 100, 100) + "%"; };
         window.exportText = () => { const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([editor.innerText],{type:'text/plain'})); a.download=`${titleInput.value}.txt`; a.click(); };
         window.changePw = () => { const p = prompt("현재 암호:"); if(p === settings.studioPw) { const n = prompt("새 암호:"); if(n) setDoc(doc(db, "app_settings", "global_v1"), {...settings, studioPw:n}); } };
         window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('active');
         window.closeSidebar = () => document.getElementById('sidebar').classList.remove('active');
-
         applySettings();
     </script>
 </body>
