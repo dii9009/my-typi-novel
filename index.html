@@ -308,10 +308,17 @@
             }, 1000);
         };
 
-        function updateSaveTime() {
-            const n = new Date();
-            document.getElementById('last-save-time').innerText = `저장: ${n.getHours()}:${n.getMinutes().toString().padStart(2,'0')}`;
-        }
+    function updateSaveTime() {
+    const n = new Date();
+    const y = n.getFullYear();
+    const m = (n.getMonth() + 1).toString().padStart(2, '0');
+    const d = n.getDate().toString().padStart(2, '0');
+    const hh = n.getHours().toString().padStart(2, '0');
+    const mm = n.getMinutes().toString().padStart(2, '0');
+    
+    // 요청하신 0000/00/00 00:00 형식으로 출력합니다.
+    document.getElementById('last-save-time').innerText = `${y}/${m}/${d} ${hh}:${mm}`;
+}
 
         window.switchTab = async (type) => {
             document.getElementById('tab-epi').classList.toggle('active', type === 'epi');
