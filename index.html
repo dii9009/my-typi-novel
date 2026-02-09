@@ -31,6 +31,7 @@
 
         /* 에피소드 리스트 */
         .folder-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 8px; cursor: pointer; color: #bbb; font-weight: bold; font-size: 0.85rem; border-bottom: 1px solid #222; }
+        .folder-header.open { color: #4a90e2; }
         .chapter-list { list-style: none; padding-left: 10px; margin: 5px 0; min-height: 20px; }
         .chapter-item-container { display: flex; justify-content: space-between; align-items: center; border-radius: 4px; margin-bottom: 2px; cursor: grab; background: #1a1a1a; }
         .chapter-item-container.active { background: #222 !important; border-left: 3px solid #4a90e2; }
@@ -42,7 +43,7 @@
         #chapter-title { width: 100%; font-size: 1.8rem; border: none; background: transparent; color: #fff; outline: none; margin-bottom: 30px; font-weight: bold; }
         #editor { width: 100%; min-height: 70vh; font-size: var(--font-size); line-height: 1.8em; color: #d4d4d4; outline: none; white-space: pre-wrap; word-break: break-all; }
 
-        /* [업데이트] 검색 패널 (우측) */
+        /* 검색 패널 (우측) */
         #search-panel { position: absolute; top: 0; right: 0; width: 350px; height: 100%; background: #111; border-left: 1px solid #333; z-index: 1500; display: flex; flex-direction: column; transform: translateX(100%); transition: 0.3s; padding: 20px; box-sizing: border-box; }
         #search-panel.active { transform: translateX(0); }
         .search-res-item { padding: 15px 10px; border-bottom: 1px solid #222; cursor: pointer; transition: 0.2s; }
@@ -51,7 +52,7 @@
         .search-res-snippet { font-size: 0.75rem; color: #888; line-height: 1.6; background: #151515; padding: 8px; border-radius: 4px; margin-top: 5px; }
         .highlight { color: #fff; background: rgba(74, 144, 226, 0.4); font-weight: bold; padding: 0 2px; }
 
-        /* 상태바 */
+        /* 하단바 */
         .status-bar { position: fixed; bottom: 0; left: 280px; right: 0; background: #111; border-top: 1px solid #222; z-index: 998; }
         @media (max-width: 768px) { .status-bar { left: 0; } }
         .status-info { padding: 12px 25px; display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; }
@@ -81,10 +82,10 @@
             </div>
             <div id="content-epi" class="sidebar-content">
                 <div style="display:flex; gap:8px; margin-bottom:20px;">
-                    <button onclick="addNewFolder()" style="flex:1; padding:10px; background:#2a2a2a; border:1px solid #444; color:#fff; border-radius:6px; font-size:0.75rem;">📁 폴더</button>
-                    <button onclick="addNewChapter()" style="flex:1; padding:10px; background:#2a2a2a; border:1px solid #444; color:#fff; border-radius:6px; font-size:0.75rem;">📝 에피</button>
+                    <button onclick="addNewFolder()" style="flex:1; padding:10px; background:#2a2a2a; border:1px solid #444; color:#fff; border-radius:6px; font-size:0.75rem; font-weight:bold;">📁 폴더</button>
+                    <button onclick="addNewChapter()" style="flex:1; padding:10px; background:#2a2a2a; border:1px solid #444; color:#fff; border-radius:6px; font-size:0.75rem; font-weight:bold;">📝 에피</button>
                 </div>
-                <div id="folder-list">연결 중...</div>
+                <div id="folder-list">데이터 연동 중...</div>
             </div>
             <div id="content-world" class="sidebar-content hidden">
                 <textarea id="world-memo-area" style="width:100%; height:85%; background:transparent; border:none; color:#888; font-size:0.85rem; line-height:1.7; outline:none; resize:none; padding:10px; box-sizing:border-box;" placeholder="세계관 설정을 기록하세요..."></textarea>
@@ -123,7 +124,7 @@
                 <span onclick="setFontSize()" style="cursor:pointer; text-decoration:underline; color:#888;">글자:<span id="display-font">1.15</span></span>
             </div>
             <div style="display:flex; align-items:center; gap:5px;">
-                <span id="last-save-time" class="save-time">대기 중</span>
+                <span id="last-save-time" class="save-time">저장 기록 없음</span>
                 <div id="word-count" style="margin-right:10px;">0자</div>
                 <div id="sync-status" style="font-weight:bold;">●</div>
                 <span style="color:#222; font-weight:bold; margin-left:10px;">v5.57</span>
@@ -135,15 +136,14 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, onSnapshot, query, orderBy, writeBatch, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // 🔥 본인의 설정을 입력하세요
         const firebaseConfig = { 
-
  apiKey: "AIzaSyC4FjTYr8xxPH9y7H13h8EzIf-CxKb8QkI",
   authDomain: "my-typi-app.firebaseapp.com",
   projectId: "my-typi-app",
   storageBucket: "my-typi-app.firebasestorage.app",
   messagingSenderId: "793573516752",
   appId: "1:793573516752:web:2b3d20a8c432a0b5d445d5"
+
 };
 
         const app = initializeApp(firebaseConfig);
@@ -165,7 +165,7 @@
         let foldersData = [];
         let chaptersData = [];
 
-        // --- 1. [핵심] 맥락 기반 검색 기능 ---
+        // 맥락 검색 기능
         window.openSearch = () => {
             const keyword = prompt("전체 에피소드에서 검색할 단어를 입력하세요:");
             if (!keyword || keyword.trim() === "") return;
@@ -185,42 +185,29 @@
             results.forEach(res => {
                 const plainText = (res.content || "").replace(/<[^>]*>?/gm, '');
                 const kwIndex = plainText.indexOf(keyword);
-                
-                // 검색어 앞뒤 문맥 추출
                 const start = Math.max(0, kwIndex - 40);
                 const end = Math.min(plainText.length, kwIndex + keyword.length + 40);
                 let snippet = plainText.substring(start, end);
-                
-                // 하이라이트 처리
                 const highlighted = snippet.replace(new RegExp(keyword, 'g'), `<span class="highlight">${keyword}</span>`);
 
                 const item = document.createElement('div');
                 item.className = 'search-res-item';
-                item.innerHTML = `
-                    <div class="search-res-title">
-                        <span>${res.title || '제목 없음'}</span>
-                        <span style="font-size:0.65rem; opacity:0.3;">이동 &gt;</span>
-                    </div>
-                    <div class="search-res-snippet">...${highlighted}...</div>
-                `;
+                item.innerHTML = `<div class="search-res-title"><span>${res.title || '제목 없음'}</span></div><div class="search-res-snippet">...${highlighted}...</div>`;
                 item.onclick = () => { loadChapter(res.id); closeSearch(); };
                 searchList.appendChild(item);
             });
         };
-
         window.closeSearch = () => searchPanel.classList.remove('active');
 
-        // --- 2. 앱 구동 및 데이터 로직 ---
         function startApp() {
             onSnapshot(query(collection(db, "folders"), orderBy("createdAt", "asc")), (snap) => {
                 foldersData = []; snap.forEach(d => foldersData.push({id: d.id, ...d.data()}));
                 renderAll();
             });
-
             onSnapshot(collection(db, "myNovels"), (snap) => {
                 syncStatus.style.color = "#4ade80";
                 chaptersData = []; snap.forEach(d => chaptersData.push({id: d.id, ...d.data()}));
-                chaptersData.sort((a, b) => (a.order || 9999) - (b.order || 9999));
+                chaptersData.sort((a, b) => (a.order || 999999) - (b.order || 999999) || (a.createdAt || 0) - (b.createdAt || 0));
                 renderAll();
                 if(!isTyping && currentChapterId) loadChapter(currentChapterId);
             });
@@ -228,41 +215,33 @@
 
         function renderAll() {
             const listUI = document.getElementById('folder-list');
-            if(!listUI) return;
             listUI.innerHTML = '';
             const unclassified = chaptersData.filter(c => !c.folderId);
             if(unclassified.length > 0) listUI.appendChild(renderFolderUI("📂 미분류", "none", unclassified));
-            foldersData.forEach(f => {
-                listUI.appendChild(renderFolderUI("📂 " + f.name, f.id, chaptersData.filter(c => c.folderId === f.id)));
-            });
+            foldersData.forEach(f => listUI.appendChild(renderFolderUI("📂 " + f.name, f.id, chaptersData.filter(c => c.folderId === f.id))));
         }
 
         function renderFolderUI(name, id, chapters) {
             const div = document.createElement('div');
             const isOpen = (currentFolderId === id);
-            div.innerHTML = `<div class="folder-header ${isOpen ? 'open' : ''}" onclick="toggleFolder('${id}')"><span>${name}</span></div>
-                <ul class="chapter-list ${isOpen ? '' : 'hidden'}"></ul>`;
+            div.innerHTML = `<div class="folder-header ${isOpen ? 'open' : ''}" onclick="toggleFolder('${id}')"><span>${name}</span></div><ul class="chapter-list ${isOpen ? '' : 'hidden'}"></ul>`;
             const ul = div.querySelector('ul');
             chapters.forEach(c => {
                 const li = document.createElement('li'); 
                 li.className = `chapter-item-container ${c.id === currentChapterId ? 'active' : ''}`;
-                li.dataset.id = c.id;
                 li.draggable = true;
+                li.dataset.id = c.id;
                 li.innerHTML = `<div class="chapter-item">${c.title || '제목 없음'}</div><div style="padding:0 10px; opacity:0.3; cursor:pointer;" onclick="deleteChapter('${c.id}', event)">×</div>`;
-                
-                // 드래그 (PC 전용)
                 li.addEventListener('dragstart', handleDragStart);
                 li.addEventListener('dragover', handleDragOver);
                 li.addEventListener('drop', handleDrop);
                 li.addEventListener('dragend', handleDragEnd);
-
                 li.onclick = (e) => { if (e.target.innerText !== '×') { isTyping = false; loadChapter(c.id); } };
                 ul.appendChild(li);
             });
             return div;
         }
 
-        // 드래그 앤 드롭
         let dragSrcEl = null;
         function handleDragStart(e) { dragSrcEl = this; this.style.opacity = '0.4'; e.dataTransfer.effectAllowed = 'move'; }
         function handleDragOver(e) { if (e.preventDefault) e.preventDefault(); return false; }
@@ -281,10 +260,10 @@
         }
         function handleDragEnd() { this.style.opacity = '1'; }
 
-        // --- 3. 설정 및 유틸리티 ---
         onSnapshot(doc(db, "app_settings", "global_v1"), (sDoc) => {
             if (sDoc.exists()) { settings = { ...settings, ...sDoc.data() }; applySettings(); }
         });
+
         window.checkAuth = () => {
             if(document.getElementById('pw-input').value === settings.studioPw) {
                 document.getElementById('lock-screen').style.display = 'none';
@@ -344,19 +323,11 @@
         titleInput.addEventListener('input', () => processSave('epi'));
         editor.addEventListener('input', () => { processSave('epi'); updateWordCount(); });
         worldMemo.addEventListener('input', () => processSave('world'));
-        window.exportText = () => {
-            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([editor.innerText], { type: 'text/plain' }));
-            a.download = `${titleInput.value || '제목없음'}.txt`; a.click();
-        };
+        window.exportText = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([editor.innerText], { type: 'text/plain' })); a.download = `${titleInput.value || '제목없음'}.txt`; a.click(); };
         window.setGoal = () => { const v = prompt("목표:", settings.goalWords); if(v) setDoc(doc(db, "app_settings", "global_v1"), { goalWords: parseInt(v) }, { merge: true }); };
         window.setFontSize = () => { const v = prompt("크기:", settings.fontSize); if(v) setDoc(doc(db, "app_settings", "global_v1"), { fontSize: parseFloat(v) }, { merge: true }); };
         window.addNewFolder = async () => { const n = prompt("새 폴더:"); if(n) await setDoc(doc(db, "folders", 'fd'+Date.now()), { name: n, createdAt: Date.now() }); };
-        window.addNewChapter = async () => {
-            if(currentFolderId === 'none') return alert("폴더 선택!");
-            const id = 'ch'+Date.now();
-            await setDoc(doc(db, "myNovels", id), { title: "새 에피소드", content: "", folderId: currentFolderId, order: 9999, createdAt: Date.now() });
-            loadChapter(id);
-        };
+        window.addNewChapter = async () => { if(currentFolderId === 'none') return alert("폴더 선택!"); const id = 'ch'+Date.now(); await setDoc(doc(db, "myNovels", id), { title: "새 에피소드", content: "", folderId: currentFolderId, order: 9999, createdAt: Date.now() }); loadChapter(id); };
         window.deleteChapter = async (id, e) => { e.stopPropagation(); if(confirm("삭제?")) await deleteDoc(doc(db, "myNovels", id)); };
         window.restoreVersion = () => { if(confirm("복구?")) { editor.innerHTML = lastSavedContent; updateWordCount(); } };
         window.copyAllText = () => { navigator.clipboard.writeText(editor.innerText).then(() => alert("복사됨!")); };
