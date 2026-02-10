@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Cloud Studio v5.57</title>
+    <title>Cloud Studio v5.58</title>
     <style>
         :root { --font-size: 1.15rem; --paragraph-margin: 10px; }
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #1a1a1a; color: #d4d4d4; font-family: 'Pretendard', -apple-system, sans-serif; overflow: hidden; }
@@ -13,7 +13,6 @@
         #lock-screen input { padding: 15px; width: 220px; border-radius: 8px; border: 1px solid #333; background: #222; color: white; font-size: 1.2rem; text-align: center; outline: none; }
         #lock-screen button { margin-top: 15px; padding: 10px 40px; background: #4a90e2; border: none; color: white; border-radius: 6px; cursor: pointer; font-weight: bold; }
 
-        /* 사이드바 */
         .sidebar { width: 280px; min-width: 280px; height: 100%; background: #111; border-right: 1px solid #333; padding: 20px; display: flex; flex-direction: column; box-sizing: border-box; z-index: 1000; }
         @media (max-width: 768px) { .sidebar { position: fixed; left: 0; transform: translateX(-100%); transition: 0.3s; } .sidebar.active { transform: translateX(0); } }
         
@@ -28,7 +27,6 @@
         .sidebar-content { flex: 1; overflow-y: auto; }
         .hidden { display: none !important; }
 
-        /* 에피소드 리스트 */
         .folder-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 8px; cursor: pointer; color: #bbb; font-weight: bold; font-size: 0.85rem; border-bottom: 1px solid #222; }
         .chapter-list { list-style: none; padding-left: 10px; margin: 5px 0; min-height: 50px; }
         .chapter-item-container { display: flex; justify-content: space-between; align-items: center; border-radius: 4px; margin-bottom: 2px; cursor: grab; background: #1a1a1a; transition: background 0.1s; }
@@ -36,13 +34,11 @@
         .chapter-item-container.active { background: #222 !important; border-left: 3px solid #4a90e2; }
         .chapter-item { flex: 1; padding: 12px 10px; font-size: 0.85rem; color: #777; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
 
-        /* 메인 영역 */
         .main-content { flex: 1; height: 100%; overflow-y: auto; background: #1a1a1a; display: flex; flex-direction: column; align-items: center; padding: 40px 20px 160px 20px; box-sizing: border-box; }
         .editor-container { width: 100%; max-width: 800px; }
         #chapter-title { width: 100%; font-size: 1.8rem; border: none; background: transparent; color: #fff; outline: none; margin-bottom: 30px; font-weight: bold; }
         #editor { width: 100%; min-height: 70vh; font-size: var(--font-size); line-height: 1.8em; color: #d4d4d4; outline: none; white-space: pre-wrap; word-break: break-all; }
 
-        /* 검색 패널 (우측) */
         #search-panel { position: absolute; top: 0; right: 0; width: 350px; height: 100%; background: #111; border-left: 1px solid #333; z-index: 1500; display: flex; flex-direction: column; transform: translateX(100%); transition: 0.3s; padding: 20px; box-sizing: border-box; }
         #search-panel.active { transform: translateX(0); }
         .search-res-item { padding: 15px 10px; border-bottom: 1px solid #222; cursor: pointer; }
@@ -122,7 +118,7 @@
                 <span id="last-save-time" class="save-time">저장 기록 없음</span>
                 <div id="word-count" style="margin-right:10px;">0자</div>
                 <div id="sync-status" style="font-weight:bold;">●</div>
-                <span style="color:#222; font-weight:bold; margin-left:10px;">v5.57</span>
+                <span style="color:#222; font-weight:bold; margin-left:10px;">v5.58</span>
             </div>
         </div>
     </div>
@@ -131,13 +127,14 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, onSnapshot, query, orderBy, writeBatch, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // 🔥 본인의 설정을 입력하세요
-        const firebaseConfig = {  apiKey: "AIzaSyC4FjTYr8xxPH9y7H13h8EzIf-CxKb8QkI",
-  authDomain: "my-typi-app.firebaseapp.com",
-  projectId: "my-typi-app",
-  storageBucket: "my-typi-app.firebasestorage.app",
-  messagingSenderId: "793573516752",
-  appId: "1:793573516752:web:2b3d20a8c432a0b5d445d5" };
+        const firebaseConfig = { 
+            apiKey: "AIzaSyC4FjTYr8xxPH9y7H13h8EzIf-CxKb8QkI",
+            authDomain: "my-typi-app.firebaseapp.com",
+            projectId: "my-typi-app",
+            storageBucket: "my-typi-app.firebasestorage.app",
+            messagingSenderId: "793573516752",
+            appId: "1:793573516752:web:2b3d20a8c432a0b5d445d5" 
+        };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -149,29 +146,20 @@
         const worldMemo = document.getElementById('world-memo-area');
         const searchPanel = document.getElementById('search-panel');
         const searchList = document.getElementById('search-results-list');
+        const lastSaveDisplay = document.getElementById('last-save-time');
 
         let currentChapterId = localStorage.getItem('lastChapterId') || '';
         let currentFolderId = localStorage.getItem('lastFolderId') || 'none';
         let isTyping = false;
-        let lastSavedContent = ""; 
+        let lastSavedContent = "";
         let settings = { goalWords: 5000, fontSize: 1.15, studioPw: "0000" };
         let foldersData = [];
         let chaptersData = [];
 
-        // --- 1. [해결] 드래그 앤 드롭 슬라이드 정렬 로직 ---
+        // --- 1. 드래그 앤 드롭 ---
         let dragSrcEl = null;
-
-        function handleDragStart(e) {
-            dragSrcEl = this;
-            this.classList.add('dragging');
-            e.dataTransfer.effectAllowed = 'move';
-        }
-
-        function handleDragOver(e) {
-            if (e.preventDefault) e.preventDefault();
-            return false;
-        }
-
+        function handleDragStart(e) { dragSrcEl = this; this.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
+        function handleDragOver(e) { if (e.preventDefault) e.preventDefault(); return false; }
         async function handleDrop(e) {
             e.stopPropagation();
             if (dragSrcEl !== this) {
@@ -179,12 +167,8 @@
                 const nodes = Array.from(list.children);
                 const fromIdx = nodes.indexOf(dragSrcEl);
                 const toIdx = nodes.indexOf(this);
-
-                // 시각적 순서 변경
                 if (fromIdx < toIdx) list.insertBefore(dragSrcEl, this.nextSibling);
                 else list.insertBefore(dragSrcEl, this);
-
-                // DB 순서 동기화 (슬라이드 방식)
                 const batch = writeBatch(db);
                 Array.from(list.children).forEach((item, index) => {
                     batch.update(doc(db, "myNovels", item.dataset.id), { order: index });
@@ -194,10 +178,9 @@
             }
             return false;
         }
-
         function handleDragEnd() { this.classList.remove('dragging'); }
 
-        // --- 2. 검색 및 앱 로직 ---
+        // --- 2. 앱 핵심 로직 ---
         window.openSearch = () => {
             const keyword = prompt("검색어 입력:");
             if (!keyword || keyword.trim() === "") return;
@@ -228,7 +211,6 @@
             onSnapshot(collection(db, "myNovels"), (snap) => {
                 syncStatus.style.color = "#4ade80";
                 chaptersData = []; snap.forEach(d => chaptersData.push({id: d.id, ...d.data()}));
-                // 정렬: order 우선, 같으면 생성 시간순
                 chaptersData.sort((a, b) => (a.order || 0) - (b.order || 0) || (a.createdAt || 0) - (b.createdAt || 0));
                 renderAll();
                 if(!isTyping && currentChapterId) loadChapter(currentChapterId);
@@ -264,10 +246,63 @@
             return div;
         }
 
-        // --- 3. 공통 유틸리티 ---
+        // --- 3. 개별 저장 시간 처리 로직 ---
+        function formatTime(timestamp) {
+            if(!timestamp) return "저장 기록 없음";
+            const n = new Date(timestamp);
+            const y = n.getFullYear();
+            const m = (n.getMonth() + 1).toString().padStart(2, '0');
+            const d = n.getDate().toString().padStart(2, '0');
+            const hh = n.getHours().toString().padStart(2, '0');
+            const mm = n.getMinutes().toString().padStart(2, '0');
+            return `${y}/${m}/${d} ${hh}:${mm}`;
+        }
+
+        async function loadChapter(id) {
+            if(isTyping) return;
+            currentChapterId = id; localStorage.setItem('lastChapterId', id);
+            const snap = await getDoc(doc(db, "myNovels", id));
+            if (snap.exists()) {
+                const data = snap.data();
+                titleInput.value = data.title; 
+                editor.innerHTML = data.content;
+                lastSavedContent = data.content;
+                // [변경] 개별 에피소드의 저장 시간을 가져와 표시
+                lastSaveDisplay.innerText = formatTime(data.updatedAt);
+                updateWordCount();
+                if(window.innerWidth <= 768) closeSidebar();
+                renderAll();
+            }
+        }
+
+        let saveTimer;
+        const processSave = (type) => {
+            isTyping = true;
+            syncStatus.style.color = "#ff4d4d";
+            clearTimeout(saveTimer);
+            saveTimer = setTimeout(async () => {
+                const now = Date.now();
+                if(type === 'world') {
+                    await setDoc(doc(db, "app_settings", "world_memo"), { content: worldMemo.value });
+                } else {
+                    await setDoc(doc(db, "myNovels", currentChapterId), { 
+                        title: titleInput.value, 
+                        content: editor.innerHTML, 
+                        updatedAt: now 
+                    }, { merge: true });
+                    // [변경] 현재 에피소드 저장 후 개별 시간 즉시 업데이트
+                    lastSaveDisplay.innerText = formatTime(now);
+                }
+                syncStatus.style.color = "#4ade80"; 
+                isTyping = false;
+            }, 1000);
+        };
+
+        // --- 4. 공통 설정 및 기타 ---
         onSnapshot(doc(db, "app_settings", "global_v1"), (sDoc) => {
             if (sDoc.exists()) { settings = { ...settings, ...sDoc.data() }; applySettings(); }
         });
+
         window.checkAuth = () => {
             if(document.getElementById('pw-input').value === settings.studioPw) {
                 document.getElementById('lock-screen').style.display = 'none';
@@ -285,40 +320,6 @@
         }
 
         window.toggleFolder = (id) => { currentFolderId = (currentFolderId === id) ? 'none' : id; localStorage.setItem('lastFolderId', currentFolderId); renderAll(); };
-
-        async function loadChapter(id) {
-            if(isTyping) return; currentChapterId = id; localStorage.setItem('lastChapterId', id);
-            const snap = await getDoc(doc(db, "myNovels", id));
-            if (snap.exists()) {
-                const data = snap.data(); titleInput.value = data.title; editor.innerHTML = data.content;
-                lastSavedContent = data.content; updateWordCount();
-                if(window.innerWidth <= 768) closeSidebar();
-                renderAll();
-            }
-        }
-
-        let saveTimer;
-        const processSave = (type) => {
-            isTyping = true; syncStatus.style.color = "#ff4d4d";
-            clearTimeout(saveTimer);
-            saveTimer = setTimeout(async () => {
-                if(type === 'world') await setDoc(doc(db, "app_settings", "world_memo"), { content: worldMemo.value });
-                else await setDoc(doc(db, "myNovels", currentChapterId), { title: titleInput.value, content: editor.innerHTML, updatedAt: Date.now() }, { merge: true });
-                syncStatus.style.color = "#4ade80"; updateSaveTime(); isTyping = false;
-            }, 1000);
-        };
-
-    function updateSaveTime() {
-    const n = new Date();
-    const y = n.getFullYear();
-    const m = (n.getMonth() + 1).toString().padStart(2, '0');
-    const d = n.getDate().toString().padStart(2, '0');
-    const hh = n.getHours().toString().padStart(2, '0');
-    const mm = n.getMinutes().toString().padStart(2, '0');
-    
-    // 요청하신 0000/00/00 00:00 형식으로 출력합니다.
-    document.getElementById('last-save-time').innerText = `${y}/${m}/${d} ${hh}:${mm}`;
-}
 
         window.switchTab = async (type) => {
             document.getElementById('tab-epi').classList.toggle('active', type === 'epi');
@@ -342,14 +343,14 @@
             if(currentFolderId === 'none') return alert("폴더 선택!");
             const id = 'ch'+Date.now();
             const order = chaptersData.filter(c => c.folderId === currentFolderId).length;
-            await setDoc(doc(db, "myNovels", id), { title: "새 에피소드", content: "", folderId: currentFolderId, order: order, createdAt: Date.now() });
+            await setDoc(doc(db, "myNovels", id), { title: "새 에피소드", content: "", folderId: currentFolderId, order: order, createdAt: Date.now(), updatedAt: Date.now() });
             loadChapter(id);
         };
         window.deleteChapter = async (id, e) => { e.stopPropagation(); if(confirm("삭제?")) await deleteDoc(doc(db, "myNovels", id)); };
         window.restoreVersion = () => { if(confirm("복구?")) { editor.innerHTML = lastSavedContent; updateWordCount(); } };
         window.copyAllText = () => { navigator.clipboard.writeText(editor.innerText).then(() => alert("복사됨!")); };
         window.updateWordCount = () => { 
-            const cnt = (editor.innerText || "").replace(/\r\n/g, "\n").trim().length; 
+            const cnt = (editor.innerText || "").replace(/\r\n/g, "\n").trim().length;
             document.getElementById('word-count').innerText = cnt.toLocaleString() + '자';
             document.getElementById('progress-bar').style.width = Math.min((cnt / settings.goalWords) * 100, 100) + "%";
         };
