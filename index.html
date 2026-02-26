@@ -19,9 +19,9 @@
             outline: none; 
             white-space: pre-wrap; 
             word-break: break-all; 
-            padding-bottom: 100px;
+            padding-bottom: 200px;
         }
-        /* 줄간격 벌어짐 방지 핵심 CSS */
+        /* 줄간격 및 빈 줄 높이 보장 */
         #editor div, #editor p { margin: 0 !important; padding: 0 !important; min-height: 1.2em; }
 
         #lock-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #111; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
@@ -138,7 +138,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, onSnapshot, query, orderBy, writeBatch, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // [보안] 본인의 Firebase 정보를 입력하세요.
         const firebaseConfig = {  apiKey: "AIzaSyC4FjTYr8xxPH9y7H13h8EzIf-CxKb8QkI",
   authDomain: "my-typi-app.firebaseapp.com",
   projectId: "my-typi-app",
@@ -146,7 +145,6 @@
   messagingSenderId: "793573516752",
   appId: "1:793573516752:web:2b3d20a8c432a0b5d445d5"
  };
-
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         enableIndexedDbPersistence(db).catch(() => {});
@@ -167,24 +165,33 @@
         let foldersData = [];
         let chaptersData = [];
 
-        // [핵심] 엔터 시 줄간격 벌어짐 및 커서 튕김 방지
+        // [핵심] 엔터 및 붙여넣기 개선 로직
         editor.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                document.execCommand('insertHTML', false, '<div><br></div>');
+                const selection = window.getSelection();
+                const range = selection.getRangeAt(0);
+                const div = document.createElement('div');
+                div.innerHTML = '<br>';
+                range.deleteContents();
+                range.insertNode(div);
+                range.setStartAfter(div.firstChild);
+                range.setEndAfter(div.firstChild);
+                selection.removeAllRanges();
+                selection.addRange(range);
+                editor.dispatchEvent(new Event('input'));
             }
         });
 
-        // [핵심] 붙여넣기 시 중복 줄바꿈 방지 및 스타일 제거
         editor.addEventListener('paste', (e) => {
             e.preventDefault();
             const text = (e.originalEvent || e).clipboardData.getData('text/plain');
-            const cleanHtml = text.split(/\r?\n/).map(line => line.trim() === "" ? "<div><br></div>" : `<div>${line}</div>`).join("");
+            const cleanHtml = text.split(/\r?\n/).map(line => `<div>${line.length > 0 ? line : '<br>'}</div>`).join("");
             document.execCommand("insertHTML", false, cleanHtml);
             updateWordCount();
         });
 
-        // --- 1. 드래그 앤 드롭 (v5.58 기능 유지) ---
+        // --- 기존 로직 전체 복구 ---
         let dragSrcEl = null;
         function handleDragStart(e) { dragSrcEl = this; this.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
         function handleDragOver(e) { if (e.preventDefault) e.preventDefault(); return false; }
@@ -205,7 +212,6 @@
         }
         function handleDragEnd() { this.classList.remove('dragging'); }
 
-        // --- 2. 통합 검색 ---
         window.openSearch = () => {
             const keyword = prompt("검색어 입력:");
             if (!keyword || keyword.trim() === "") return;
@@ -228,7 +234,6 @@
         };
         window.closeSearch = () => searchPanel.classList.remove('active');
 
-        // --- 3. 데이터 동기화 및 렌더링 ---
         function startApp() {
             onSnapshot(query(collection(db, "folders"), orderBy("createdAt", "asc")), (snap) => {
                 foldersData = []; snap.forEach(d => foldersData.push({id: d.id, ...d.data()}));
@@ -272,7 +277,6 @@
             return div;
         }
 
-        // --- 4. 시간 포맷 및 저장 로직 ---
         function formatTime(timestamp) {
             if(!timestamp) return "저장 기록 없음";
             const n = new Date(timestamp);
@@ -307,7 +311,6 @@
             }, 1000);
         };
 
-        // --- 5. 설정 및 권한 제어 ---
         onSnapshot(doc(db, "app_settings", "global_v1"), (sDoc) => { if (sDoc.exists()) { settings = { ...settings, ...sDoc.data() }; applySettings(); } });
         window.checkAuth = () => {
             if(document.getElementById('pw-input').value === settings.studioPw) {
@@ -323,7 +326,6 @@
             updateWordCount();
         }
 
-        // --- 6. 기타 UI 편의 기능 ---
         window.toggleFolder = (id) => { currentFolderId = (currentFolderId === id) ? 'none' : id; localStorage.setItem('lastFolderId', currentFolderId); renderAll(); };
         window.switchTab = async (type) => {
             document.getElementById('tab-epi').classList.toggle('active', type === 'epi');
