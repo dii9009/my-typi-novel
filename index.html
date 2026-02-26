@@ -9,7 +9,7 @@
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #1a1a1a; color: #d4d4d4; font-family: 'Pretendard', -apple-system, sans-serif; overflow: hidden; }
         .app-container { display: flex; width: 100vw; height: 100vh; overflow: hidden; position: relative; }
         
-        /* 에디터 스타일 최적화: 줄간격 고정 및 여백 제거 */
+        /* 에디터 스타일 최적화 */
         #editor { 
             width: 100%; 
             min-height: 70vh; 
@@ -21,7 +21,7 @@
             word-break: break-all; 
             padding-bottom: 100px;
         }
-        /* 엔터 시 생성되는 div 태그의 여백을 0으로 강제 */
+        /* 줄간격 벌어짐 방지 핵심 CSS */
         #editor div, #editor p { margin: 0 !important; padding: 0 !important; min-height: 1.2em; }
 
         #lock-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #111; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
@@ -79,10 +79,7 @@
     
     <div class="app-container">
         <div class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <h2 onclick="location.reload()">CLOUD STUDIO</h2>
-                <span class="refresh-btn" onclick="location.reload()">↻</span>
-            </div>
+            <div class="sidebar-header"><h2 onclick="location.reload()">CLOUD STUDIO</h2><span class="refresh-btn" onclick="location.reload()">↻</span></div>
             <div class="tab-menu">
                 <button class="tab-btn active" id="tab-epi" onclick="switchTab('epi')">📝 에피소드</button>
                 <button class="tab-btn" id="tab-world" onclick="switchTab('world')">🌎 설정/메모</button>
@@ -141,8 +138,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, onSnapshot, query, orderBy, writeBatch, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // [보안] 본인의 Firebase 정보를 여기에 입력하세요.
-
+        // [보안] 본인의 Firebase 정보를 입력하세요.
         const firebaseConfig = {  apiKey: "AIzaSyC4FjTYr8xxPH9y7H13h8EzIf-CxKb8QkI",
   authDomain: "my-typi-app.firebaseapp.com",
   projectId: "my-typi-app",
@@ -171,24 +167,24 @@
         let foldersData = [];
         let chaptersData = [];
 
-        // [핵심수정 1] 엔터 시 줄간격 벌어짐 및 커서 튕김 방지
+        // [핵심] 엔터 시 줄간격 벌어짐 및 커서 튕김 방지
         editor.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                // insertHTML을 사용하여 정확한 위치에 div 삽입 (커서 튕김 방지)
                 document.execCommand('insertHTML', false, '<div><br></div>');
             }
         });
 
-        // [핵심수정 2] 붙여넣기 시 스타일 제거 (텍스트 전용)
+        // [핵심] 붙여넣기 시 중복 줄바꿈 방지 및 스타일 제거
         editor.addEventListener('paste', (e) => {
             e.preventDefault();
             const text = (e.originalEvent || e).clipboardData.getData('text/plain');
-            document.execCommand("insertHTML", false, text.replace(/\n/g, '<div><br></div>'));
+            const cleanHtml = text.split(/\r?\n/).map(line => line.trim() === "" ? "<div><br></div>" : `<div>${line}</div>`).join("");
+            document.execCommand("insertHTML", false, cleanHtml);
             updateWordCount();
         });
 
-        // --- 기존 v5.58 로직 완벽 유지 ---
+        // --- 1. 드래그 앤 드롭 (v5.58 기능 유지) ---
         let dragSrcEl = null;
         function handleDragStart(e) { dragSrcEl = this; this.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
         function handleDragOver(e) { if (e.preventDefault) e.preventDefault(); return false; }
@@ -202,15 +198,14 @@
                 if (fromIdx < toIdx) list.insertBefore(dragSrcEl, this.nextSibling);
                 else list.insertBefore(dragSrcEl, this);
                 const batch = writeBatch(db);
-                Array.from(list.children).forEach((item, index) => {
-                    batch.update(doc(db, "myNovels", item.dataset.id), { order: index });
-                });
+                Array.from(list.children).forEach((item, index) => { batch.update(doc(db, "myNovels", item.dataset.id), { order: index }); });
                 await batch.commit();
             }
             return false;
         }
         function handleDragEnd() { this.classList.remove('dragging'); }
 
+        // --- 2. 통합 검색 ---
         window.openSearch = () => {
             const keyword = prompt("검색어 입력:");
             if (!keyword || keyword.trim() === "") return;
@@ -233,6 +228,7 @@
         };
         window.closeSearch = () => searchPanel.classList.remove('active');
 
+        // --- 3. 데이터 동기화 및 렌더링 ---
         function startApp() {
             onSnapshot(query(collection(db, "folders"), orderBy("createdAt", "asc")), (snap) => {
                 foldersData = []; snap.forEach(d => foldersData.push({id: d.id, ...d.data()}));
@@ -245,10 +241,7 @@
                 renderAll();
                 if(!isTyping && currentChapterId) {
                     const current = chaptersData.find(c => c.id === currentChapterId);
-                    if(current) {
-                        lastSavedContent = current.content;
-                        lastSaveDisplay.innerText = formatTime(current.updatedAt);
-                    }
+                    if(current) { lastSavedContent = current.content; lastSaveDisplay.innerText = formatTime(current.updatedAt); }
                 }
             });
         }
@@ -272,16 +265,14 @@
                 li.dataset.id = c.id;
                 li.draggable = true;
                 li.innerHTML = `<div class="chapter-item">${c.title || '제목 없음'}</div><div style="padding:0 10px; opacity:0.3; cursor:pointer;" onclick="deleteChapter('${c.id}', event)">×</div>`;
-                li.addEventListener('dragstart', handleDragStart);
-                li.addEventListener('dragover', handleDragOver);
-                li.addEventListener('drop', handleDrop);
-                li.addEventListener('dragend', handleDragEnd);
+                li.addEventListener('dragstart', handleDragStart); li.addEventListener('dragover', handleDragOver); li.addEventListener('drop', handleDrop); li.addEventListener('dragend', handleDragEnd);
                 li.onclick = (e) => { if (e.target.innerText !== '×') { isTyping = false; loadChapter(c.id); } };
                 ul.appendChild(li);
             });
             return div;
         }
 
+        // --- 4. 시간 포맷 및 저장 로직 ---
         function formatTime(timestamp) {
             if(!timestamp) return "저장 기록 없음";
             const n = new Date(timestamp);
@@ -294,44 +285,33 @@
             const snap = await getDoc(doc(db, "myNovels", id));
             if (snap.exists()) {
                 const data = snap.data();
-                titleInput.value = data.title; 
-                editor.innerHTML = data.content;
-                lastSavedContent = data.content;
+                titleInput.value = data.title; editor.innerHTML = data.content; lastSavedContent = data.content;
                 lastSaveDisplay.innerText = formatTime(data.updatedAt);
-                updateWordCount();
-                if(window.innerWidth <= 768) closeSidebar();
-                renderAll();
+                updateWordCount(); if(window.innerWidth <= 768) closeSidebar(); renderAll();
             }
         }
 
         let saveTimer;
         const processSave = (type) => {
-            isTyping = true;
-            syncStatus.style.color = "#ff4d4d";
+            isTyping = true; syncStatus.style.color = "#ff4d4d";
             clearTimeout(saveTimer);
             saveTimer = setTimeout(async () => {
                 const now = Date.now();
-                if(type === 'world') {
-                    await setDoc(doc(db, "app_settings", "world_memo"), { content: worldMemo.value });
-                } else {
+                if(type === 'world') { await setDoc(doc(db, "app_settings", "world_memo"), { content: worldMemo.value }); }
+                else {
                     if(!currentChapterId) return;
                     await setDoc(doc(db, "myNovels", currentChapterId), { title: titleInput.value, content: editor.innerHTML, updatedAt: now }, { merge: true });
                     lastSaveDisplay.innerText = formatTime(now);
                 }
-                syncStatus.style.color = "#4ade80"; 
-                isTyping = false;
+                syncStatus.style.color = "#4ade80"; isTyping = false;
             }, 1000);
         };
 
-        onSnapshot(doc(db, "app_settings", "global_v1"), (sDoc) => {
-            if (sDoc.exists()) { settings = { ...settings, ...sDoc.data() }; applySettings(); }
-        });
-
+        // --- 5. 설정 및 권한 제어 ---
+        onSnapshot(doc(db, "app_settings", "global_v1"), (sDoc) => { if (sDoc.exists()) { settings = { ...settings, ...sDoc.data() }; applySettings(); } });
         window.checkAuth = () => {
             if(document.getElementById('pw-input').value === settings.studioPw) {
-                document.getElementById('lock-screen').style.display = 'none';
-                sessionStorage.setItem('isStudioAuth', 'true');
-                startApp();
+                document.getElementById('lock-screen').style.display = 'none'; sessionStorage.setItem('isStudioAuth', 'true'); startApp();
             } else { alert("비밀번호 불일치"); }
         };
         if(sessionStorage.getItem('isStudioAuth') === 'true') { document.getElementById('lock-screen').style.display = 'none'; startApp(); }
@@ -343,6 +323,7 @@
             updateWordCount();
         }
 
+        // --- 6. 기타 UI 편의 기능 ---
         window.toggleFolder = (id) => { currentFolderId = (currentFolderId === id) ? 'none' : id; localStorage.setItem('lastFolderId', currentFolderId); renderAll(); };
         window.switchTab = async (type) => {
             document.getElementById('tab-epi').classList.toggle('active', type === 'epi');
