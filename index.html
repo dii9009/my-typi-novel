@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Cloud Studio v5.60</title>
+    <title>Cloud Studio v5.61</title>
     <style>
         :root { --font-size: 1.15rem; --line-height: 1.85; }
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #1a1a1a; color: #d4d4d4; font-family: 'Pretendard', -apple-system, sans-serif; overflow: hidden; }
         .app-container { display: flex; width: 100vw; height: 100vh; overflow: hidden; position: relative; }
         
-        /* 에디터 스타일: 맞춤법 검사(빨간 줄) 가시성 확보 및 줄간격 고정 */
+        /* 에디터 설정: 맞춤법 빨간 줄 가독성 확보 */
         #editor { 
             width: 100%; 
             min-height: 75vh; 
@@ -20,9 +20,9 @@
             white-space: pre-wrap; 
             word-break: break-all; 
             padding-bottom: 300px;
-            text-decoration-skip-ink: none; /* 빨간 줄 가독성 */
+            text-decoration-skip-ink: none; 
         }
-        /* 엔터 시 생성되는 단락 여백 제거 */
+        /* 줄간격 일관성 유지 */
         #editor div, #editor p { margin: 0 !important; padding: 0 !important; min-height: 1.2em; }
 
         /* 잠금 화면 */
@@ -30,7 +30,7 @@
         #lock-screen input { padding: 15px; width: 220px; border-radius: 8px; border: 1px solid #333; background: #222; color: white; font-size: 1.2rem; text-align: center; outline: none; }
         #lock-screen button { margin-top: 15px; padding: 10px 40px; background: #4a90e2; border: none; color: white; border-radius: 6px; cursor: pointer; font-weight: bold; }
 
-        /* 사이드바 스타일 */
+        /* 사이드바 */
         .sidebar { width: 280px; min-width: 280px; height: 100%; background: #111; border-right: 1px solid #333; padding: 20px; display: flex; flex-direction: column; box-sizing: border-box; z-index: 1000; }
         @media (max-width: 768px) { .sidebar { position: fixed; left: 0; transform: translateX(-100%); transition: 0.3s; } .sidebar.active { transform: translateX(0); } }
         .sidebar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
@@ -42,7 +42,7 @@
         .sidebar-content { flex: 1; overflow-y: auto; }
         .hidden { display: none !important; }
 
-        /* 폴더 및 에피소드 리스트 */
+        /* 리스트 스타일 */
         .folder-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 8px; cursor: pointer; color: #bbb; font-weight: bold; font-size: 0.85rem; border-bottom: 1px solid #222; }
         .chapter-list { list-style: none; padding-left: 10px; margin: 5px 0; min-height: 50px; }
         .chapter-item-container { display: flex; justify-content: space-between; align-items: center; border-radius: 4px; margin-bottom: 2px; cursor: grab; background: #1a1a1a; transition: background 0.1s; }
@@ -55,7 +55,7 @@
         .editor-container { width: 100%; max-width: 800px; }
         #chapter-title { width: 100%; font-size: 1.8rem; border: none; background: transparent; color: #fff; outline: none; margin-bottom: 30px; font-weight: bold; }
 
-        /* 통합 검색 패널 */
+        /* 검색 패널 */
         #search-panel { position: absolute; top: 0; right: 0; width: 350px; height: 100%; background: #111; border-left: 1px solid #333; z-index: 1500; display: flex; flex-direction: column; transform: translateX(100%); transition: 0.3s; padding: 20px; box-sizing: border-box; }
         #search-panel.active { transform: translateX(0); }
         .search-res-item { padding: 15px 10px; border-bottom: 1px solid #222; cursor: pointer; }
@@ -63,7 +63,7 @@
         .search-res-snippet { font-size: 0.75rem; color: #888; line-height: 1.6; background: #151515; padding: 8px; border-radius: 4px; }
         .highlight { color: #fff; background: rgba(74, 144, 226, 0.4); font-weight: bold; padding: 0 2px; }
 
-        /* 하단 바 */
+        /* 상태바 */
         .status-bar { position: fixed; bottom: 0; left: 280px; right: 0; background: #111; border-top: 1px solid #222; z-index: 998; }
         @media (max-width: 768px) { .status-bar { left: 0; } }
         .status-info { padding: 12px 25px; display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; }
@@ -123,7 +123,7 @@
     </div>
 
     <div class="status-bar">
-        <div id="progress-bar" style="height:3px; background:#4a90e2; width:0%; transition:0.3s;"></div>
+        <div id="progress-bar" style="height:3px; background:#4a90e2; width:0%;"></div>
         <div class="status-info">
             <div>
                 <span onclick="setGoal()" style="cursor:pointer; text-decoration:underline; margin-right:10px; color:#888;">목표:<span id="display-goal">5,000</span></span>
@@ -133,7 +133,7 @@
                 <span id="last-save-time" style="color:#555; margin-right:10px;">저장 기록 없음</span>
                 <div id="word-count" style="margin-right:10px;">0자</div>
                 <div id="sync-status" style="font-weight:bold;">●</div>
-                <span style="color:#222; font-weight:bold; margin-left:10px;">v5.60</span>
+                <span style="color:#222; font-weight:bold; margin-left:10px;">v5.61</span>
             </div>
         </div>
     </div>
@@ -142,6 +142,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, onSnapshot, query, orderBy, writeBatch, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // Firebase 설정 (개인 정보 삭제됨)
         const firebaseConfig = { 
  apiKey: "AIzaSyC4FjTYr8xxPH9y7H13h8EzIf-CxKb8QkI",
   authDomain: "my-typi-app.firebaseapp.com",
@@ -150,12 +151,12 @@
   messagingSenderId: "793573516752",
   appId: "1:793573516752:web:2b3d20a8c432a0b5d445d5"
 
-};
+ };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         enableIndexedDbPersistence(db).catch(() => {});
 
-        // [핵심] 브라우저 기본 문장 분리 기능 활성화 (맞춤법 및 엔터 로직 개선)
+        // [핵심] 브라우저 기본 엔터 분리 기능 활성화
         document.execCommand('defaultParagraphSeparator', false, 'div');
 
         const editor = document.getElementById('editor');
@@ -172,7 +173,7 @@
         let foldersData = [];
         let chaptersData = [];
 
-        // [수정] 붙여넣기 로직: 스타일 제거 및 정확한 줄바꿈 유지
+        // 붙여넣기 로직: 스타일 제거 및 줄바꿈 최적화
         editor.addEventListener('paste', (e) => {
             e.preventDefault();
             const text = (e.originalEvent || e).clipboardData.getData('text/plain');
@@ -181,7 +182,7 @@
             updateWordCount();
         });
 
-        // --- 원본 로직 (드래그 앤 드롭 포함 전체) ---
+        // --- 원본 로직 (index_5.57의 모든 기능) ---
         let dragSrcEl = null;
         function handleDragStart(e) { dragSrcEl = this; this.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
         function handleDragOver(e) { if (e.preventDefault) e.preventDefault(); return false; }
@@ -263,10 +264,7 @@
                 li.dataset.id = c.id;
                 li.draggable = true;
                 li.innerHTML = `<div class="chapter-item">${c.title || '제목 없음'}</div><div style="padding:0 10px; opacity:0.3; cursor:pointer;" onclick="deleteChapter('${c.id}', event)">×</div>`;
-                li.addEventListener('dragstart', handleDragStart);
-                li.addEventListener('dragover', handleDragOver);
-                li.addEventListener('drop', handleDrop);
-                li.addEventListener('dragend', handleDragEnd);
+                li.addEventListener('dragstart', handleDragStart); li.addEventListener('dragover', handleDragOver); li.addEventListener('drop', handleDrop); li.addEventListener('dragend', handleDragEnd);
                 li.onclick = (e) => { if (e.target.innerText !== '×') { isTyping = false; loadChapter(c.id); } };
                 ul.appendChild(li);
             });
@@ -309,7 +307,7 @@
         };
 
         onSnapshot(doc(db, "app_settings", "global_v1"), (sDoc) => { if (sDoc.exists()) { settings = { ...settings, ...sDoc.data() }; applySettings(); } });
-        window.checkAuth = () => { if(document.getElementById('pw-input').value === settings.studioPw) { document.getElementById('lock-screen').style.display = 'none'; sessionStorage.setItem('isStudioAuth', 'true'); startApp(); } };
+        window.checkAuth = () => { if(document.getElementById('pw-input').value === settings.studioPw) { document.getElementById('lock-screen').style.display = 'none'; sessionStorage.setItem('isStudioAuth', 'true'); startApp(); } else { alert("비밀번호 틀림"); } };
         if(sessionStorage.getItem('isStudioAuth') === 'true') { document.getElementById('lock-screen').style.display = 'none'; startApp(); }
 
         function applySettings() {
