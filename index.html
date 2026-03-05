@@ -3,27 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Cloud Studio v5.59</title>
+    <title>Cloud Studio v5.60</title>
     <style>
         :root { --font-size: 1.15rem; --line-height: 1.85; }
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #1a1a1a; color: #d4d4d4; font-family: 'Pretendard', -apple-system, sans-serif; overflow: hidden; }
         .app-container { display: flex; width: 100vw; height: 100vh; overflow: hidden; position: relative; }
         
-        /* 에디터 스타일 최적화 */
         #editor { 
             width: 100%; 
-            min-height: 70vh; 
+            min-height: 75vh; 
             font-size: var(--font-size); 
             line-height: var(--line-height); 
             color: #d4d4d4; 
             outline: none; 
             white-space: pre-wrap; 
             word-break: break-all; 
-            padding-bottom: 200px;
+            padding-bottom: 250px;
+            /* 맞춤법 검사 가독성 향상 */
+            text-decoration-skip-ink: auto;
         }
-        /* 줄간격 및 빈 줄 높이 보장 */
+        /* 줄간격 및 단락 여백 고정 */
         #editor div, #editor p { margin: 0 !important; padding: 0 !important; min-height: 1.2em; }
 
+        /* --- UI 스타일 (v5.57 원본 유지) --- */
         #lock-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #111; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         #lock-screen input { padding: 15px; width: 220px; border-radius: 8px; border: 1px solid #333; background: #222; color: white; font-size: 1.2rem; text-align: center; outline: none; }
         #lock-screen button { margin-top: 15px; padding: 10px 40px; background: #4a90e2; border: none; color: white; border-radius: 6px; cursor: pointer; font-weight: bold; }
@@ -89,7 +91,7 @@
                     <button onclick="addNewFolder()" style="flex:1; padding:10px; background:#2a2a2a; border:1px solid #444; color:#fff; border-radius:6px; font-size:0.75rem;">📁 폴더</button>
                     <button onclick="addNewChapter()" style="flex:1; padding:10px; background:#2a2a2a; border:1px solid #444; color:#fff; border-radius:6px; font-size:0.75rem;">📝 에피</button>
                 </div>
-                <div id="folder-list">데이터 연동 중...</div>
+                <div id="folder-list">데이터 로딩 중...</div>
             </div>
             <div id="content-world" class="sidebar-content hidden">
                 <textarea id="world-memo-area" style="width:100%; height:85%; background:transparent; border:none; color:#888; font-size:0.85rem; line-height:1.7; outline:none; resize:none; padding:10px; box-sizing:border-box;" placeholder="세계관 설정을 기록하세요..."></textarea>
@@ -99,13 +101,13 @@
         <div class="main-content" onclick="closeSidebar(); closeSearch();">
             <div class="editor-container">
                 <div style="display:flex; gap:8px; margin-bottom:20px; justify-content:flex-end;">
-                    <button onclick="event.stopPropagation(); openSearch();" style="background:#222; border:1px solid #4a90e2; color:#4a90e2; padding:6px 12px; border-radius:4px; font-size:0.75rem; cursor:pointer; font-weight:bold;">🔍 검색</button>
-                    <button onclick="copyAllText()" style="background:none; border:1px solid #333; color:#aaa; padding:6px 12px; border-radius:4px; font-size:0.75rem; cursor:pointer;">📋 복사</button>
-                    <button onclick="restoreVersion()" style="background:none; border:1px solid #333; color:#888; padding:6px 12px; border-radius:4px; font-size:0.75rem; cursor:pointer;">⏳ 복구</button>
-                    <button onclick="exportText()" style="background:none; border:1px solid #333; color:#888; padding:6px 12px; border-radius:4px; font-size:0.75rem; cursor:pointer;">💾 TXT</button>
+                    <button onclick="event.stopPropagation(); openSearch();" style="background:#222; border:1px solid #4a90e2; color:#4a90e2; padding:6px 12px; border-radius:4px; font-size:0.75rem; cursor:pointer;">🔍 검색</button>
+                    <button onclick="copyAllText()" style="background:none; border:1px solid #333; color:#aaa; padding:6px 12px; border-radius:4px; font-size:0.75rem;">📋 복사</button>
+                    <button onclick="restoreVersion()" style="background:none; border:1px solid #333; color:#888; padding:6px 12px; border-radius:4px; font-size:0.75rem;">⏳ 복구</button>
+                    <button onclick="exportText()" style="background:none; border:1px solid #333; color:#888; padding:6px 12px; border-radius:4px; font-size:0.75rem;">💾 TXT</button>
                 </div>
                 <input type="text" id="chapter-title" placeholder="제목을 입력하세요">
-                <div id="editor" contenteditable="true" spellcheck="false"></div>
+                <div id="editor" contenteditable="true" spellcheck="true"></div>
             </div>
         </div>
 
@@ -129,7 +131,7 @@
                 <span id="last-save-time" class="save-time">저장 기록 없음</span>
                 <div id="word-count" style="margin-right:10px;">0자</div>
                 <div id="sync-status" style="font-weight:bold;">●</div>
-                <span style="color:#222; font-weight:bold; margin-left:10px;">v5.59</span>
+                <span style="color:#222; font-weight:bold; margin-left:10px;">v5.60</span>
             </div>
         </div>
     </div>
@@ -149,6 +151,9 @@
         const db = getFirestore(app);
         enableIndexedDbPersistence(db).catch(() => {});
 
+        // 초기화 설정: 엔터 시 div 자동 생성 보장
+        document.execCommand('defaultParagraphSeparator', false, 'div');
+
         const syncStatus = document.getElementById('sync-status');
         const editor = document.getElementById('editor');
         const titleInput = document.getElementById('chapter-title');
@@ -165,24 +170,7 @@
         let foldersData = [];
         let chaptersData = [];
 
-        // [핵심] 엔터 및 붙여넣기 개선 로직
-        editor.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                const selection = window.getSelection();
-                const range = selection.getRangeAt(0);
-                const div = document.createElement('div');
-                div.innerHTML = '<br>';
-                range.deleteContents();
-                range.insertNode(div);
-                range.setStartAfter(div.firstChild);
-                range.setEndAfter(div.firstChild);
-                selection.removeAllRanges();
-                selection.addRange(range);
-                editor.dispatchEvent(new Event('input'));
-            }
-        });
-
+        // 붙여넣기 로직: 스타일 제거 및 줄바꿈 정규화
         editor.addEventListener('paste', (e) => {
             e.preventDefault();
             const text = (e.originalEvent || e).clipboardData.getData('text/plain');
@@ -191,7 +179,7 @@
             updateWordCount();
         });
 
-        // --- 기존 로직 전체 복구 ---
+        // --- 원본 기능 (v5.57 로직 100% 통합) ---
         let dragSrcEl = null;
         function handleDragStart(e) { dragSrcEl = this; this.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
         function handleDragOver(e) { if (e.preventDefault) e.preventDefault(); return false; }
