@@ -3,52 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Cloud Studio v5.66</title>
+    <title>Cloud Studio v5.68</title>
     <style>
-        /* [아이폰 최적화] 전역 박스 모델 설정 및 가로 스크롤 방지 */
+        /* 전역 리셋 및 아이폰 최적화 */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        
-        :root { --font-size: 1.15rem; --line-height: 1.85; }
+        :root { --font-size: 1.15rem; --line-height: 1.85; --primary-blue: #4a90e2; }
         
         html, body { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
             background: #1a1a1a; color: #d4d4d4; 
             font-family: 'Pretendard', -apple-system, sans-serif; 
-            overflow: hidden; /* 전체 페이지 바운스 방지 */
-            position: fixed; /* iOS 뷰포트 고정 */
+            overflow: hidden; position: fixed; 
         }
         
-        .app-container { 
-            display: flex; width: 100vw; height: 100vh; 
-            overflow: hidden; position: relative; 
-            background: #1a1a1a;
-        }
-        
-        /* 에디터 설정 */
-        #editor { 
-            width: 100%; 
-            min-height: 75vh; 
-            font-size: var(--font-size); 
-            line-height: var(--line-height); 
-            color: #d4d4d4; 
-            outline: none; 
-            white-space: break-spaces; 
-            word-break: break-all; 
-            padding-bottom: 350px;
-            text-decoration-skip-ink: none;
-            overflow-wrap: break-word;
-        }
-        #editor div, #editor p { margin: 0 !important; padding: 0 !important; min-height: 1.2em; }
+        .app-container { display: flex; width: 100vw; height: 100vh; overflow: hidden; position: relative; }
 
-        /* 사이드바 */
+        /* 사이드바 스타일 */
         .sidebar { 
             width: 280px; min-width: 280px; height: 100%; 
             background: #111; border-right: 1px solid #333; 
             padding: 20px; display: flex; flex-direction: column; 
-            box-sizing: border-box; z-index: 1000; 
+            z-index: 1000; transition: transform 0.3s;
         }
         @media (max-width: 768px) { 
-            .sidebar { position: fixed; left: 0; transform: translateX(-100%); transition: 0.3s; } 
+            .sidebar { position: fixed; left: 0; transform: translateX(-100%); } 
             .sidebar.active { transform: translateX(0); } 
         }
         
@@ -57,41 +35,73 @@
         
         .tab-menu { display: flex; gap: 5px; margin-bottom: 15px; border-bottom: 1px solid #222; padding-bottom: 10px; }
         .tab-btn { flex: 1; padding: 8px; font-size: 0.7rem; background: none; border: 1px solid #333; color: #555; cursor: pointer; border-radius: 4px; }
-        .tab-btn.active { background: #2a2a2a; color: #fff; border-color: #4a90e2; }
+        .tab-btn.active { background: #2a2a2a; color: #fff; border-color: var(--primary-blue); }
 
         .sidebar-content { flex: 1; overflow-y: auto; overflow-x: hidden; }
         .hidden { display: none !important; }
 
-        /* 메인 컨텐츠 영역: 가로 스크롤 절대 금지 */
+        /* 폴더 및 챕터 리스트 */
+        .folder-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 8px; cursor: pointer; color: #bbb; font-weight: bold; font-size: 0.85rem; border-bottom: 1px solid #222; }
+        .chapter-list { list-style: none; padding: 0 0 0 10px; margin: 5px 0; min-height: 20px; }
+        
+        .chapter-item-container { 
+            display: flex; justify-content: space-between; align-items: center; 
+            border-radius: 4px; margin-bottom: 2px; cursor: grab; 
+            background: #1a1a1a; transition: background 0.2s;
+        }
+        .chapter-item-container.dragging { opacity: 0.4; border: 1px dashed var(--primary-blue); }
+        .chapter-item-container.active { background: #222 !important; border-left: 3px solid var(--primary-blue); }
+        
+        .chapter-item { flex: 1; padding: 12px 10px; font-size: 0.85rem; color: #777; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
+        
+        /* [수정] 삭제 버튼 가독성 향상 */
+        .delete-btn { 
+            width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; color: #444; opacity: 0.5; transition: 0.2s; flex-shrink: 0; cursor: pointer; 
+        }
+        .delete-btn:hover { color: #ff4d4d; opacity: 1; }
+
+        /* 메인 영역 */
         .main-content { 
-            flex: 1; height: 100%; 
-            overflow-y: auto; overflow-x: hidden; 
+            flex: 1; height: 100%; overflow-y: auto; overflow-x: hidden; 
             background: #1a1a1a; display: flex; flex-direction: column; 
             align-items: center; padding: 40px 20px 160px 20px; 
             box-sizing: border-box; -webkit-overflow-scrolling: touch;
         }
-        .editor-container { width: 100%; max-width: 800px; overflow-x: hidden; }
+        .editor-container { width: 100%; max-width: 800px; }
         #chapter-title { width: 100%; font-size: 1.8rem; border: none; background: transparent; color: #fff; outline: none; margin-bottom: 30px; font-weight: bold; }
+        
+        #editor { 
+            width: 100%; min-height: 70vh; 
+            font-size: var(--font-size); line-height: var(--line-height); 
+            color: #d4d4d4; outline: none; 
+            white-space: break-spaces; word-break: break-all; 
+            padding-bottom: 300px; text-decoration-skip-ink: none; 
+        }
+        #editor div, #editor p { margin: 0 !important; padding: 0 !important; min-height: 1.2em; }
 
         /* 검색 패널 */
         #search-panel { 
             position: absolute; top: 0; right: 0; width: 350px; height: 100%; 
             background: #111; border-left: 1px solid #333; z-index: 1500; 
-            display: flex; flex-direction: column; 
-            transform: translateX(100%); transition: 0.3s; padding: 20px; box-sizing: border-box; 
+            display: flex; flex-direction: column; transform: translateX(100%); transition: 0.3s; padding: 20px; 
         }
         #search-panel.active { transform: translateX(0); }
+        .search-res-item { padding: 15px 10px; border-bottom: 1px solid #222; cursor: pointer; }
+        .search-res-title { font-weight: bold; font-size: 0.8rem; color: var(--primary-blue); margin-bottom: 5px; }
+        .search-res-snippet { font-size: 0.75rem; color: #888; line-height: 1.5; }
+        .highlight { background: rgba(74, 144, 226, 0.3); color: #fff; padding: 0 2px; border-radius: 2px; }
 
         /* 상태바 */
         .status-bar { position: fixed; bottom: 0; left: 280px; right: 0; background: #111; border-top: 1px solid #222; z-index: 998; }
         @media (max-width: 768px) { .status-bar { left: 0; } }
         .status-info { padding: 12px 25px; display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; }
-
+        
         /* 잠금 화면 */
         #lock-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #111; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         #lock-screen input { padding: 15px; width: 220px; border-radius: 8px; border: 1px solid #333; background: #222; color: white; font-size: 1.2rem; text-align: center; outline: none; }
-        #lock-screen button { margin-top: 15px; padding: 10px 40px; background: #4a90e2; border: none; color: white; border-radius: 6px; cursor: pointer; font-weight: bold; }
-
+        #lock-screen button { margin-top: 15px; padding: 10px 40px; background: var(--primary-blue); border: none; color: white; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        
         .menu-toggle { position: fixed; top: 15px; left: 15px; z-index: 2000; background: #222; color: white; border: none; padding: 10px 15px; border-radius: 8px; display: none; }
         @media (max-width: 768px) { .menu-toggle { display: block; } }
     </style>
@@ -99,7 +109,7 @@
 <body>
 
     <div id="lock-screen">
-        <h2 style="color:#4a90e2; letter-spacing:4px;">STUDIO LOCK</h2>
+        <h2 style="color:var(--primary-blue); letter-spacing:4px;">STUDIO LOCK</h2>
         <input type="password" id="pw-input" placeholder="Password" onkeypress="if(event.keyCode==13) checkAuth()">
         <button onclick="checkAuth()">ENTER</button>
     </div>
@@ -108,7 +118,7 @@
     
     <div class="app-container">
         <div class="sidebar" id="sidebar">
-            <div class="sidebar-header"><h2 onclick="location.reload()">CLOUD STUDIO</h2><span onclick="location.reload()" style="cursor:pointer; color:#4a90e2; font-size:1.2rem; padding:5px;">↻</span></div>
+            <div class="sidebar-header"><h2 onclick="location.reload()">CLOUD STUDIO</h2><span onclick="location.reload()" style="cursor:pointer; color:var(--primary-blue); font-size:1.2rem;">↻</span></div>
             <div class="tab-menu">
                 <button class="tab-btn active" id="tab-epi" onclick="switchTab('epi')">📝 에피소드</button>
                 <button class="tab-btn" id="tab-world" onclick="switchTab('world')">🌎 설정/메모</button>
@@ -128,7 +138,7 @@
         <div class="main-content" id="main-scroll-area" onclick="closeSidebar(); closeSearch();">
             <div class="editor-container">
                 <div style="display:flex; gap:8px; margin-bottom:20px; justify-content:flex-end;">
-                    <button onclick="event.stopPropagation(); openSearch();" style="background:#222; border:1px solid #4a90e2; color:#4a90e2; padding:6px 12px; border-radius:4px; font-size:0.75rem; cursor:pointer; font-weight:bold;">🔍 검색</button>
+                    <button onclick="event.stopPropagation(); openSearch();" style="background:#222; border:1px solid var(--primary-blue); color:var(--primary-blue); padding:6px 12px; border-radius:4px; font-size:0.75rem; cursor:pointer; font-weight:bold;">🔍 검색</button>
                     <button onclick="copyAllText()" style="background:none; border:1px solid #333; color:#aaa; padding:6px 12px; border-radius:4px; font-size:0.75rem; cursor:pointer;">📋 복사</button>
                     <button onclick="restoreVersion()" style="background:none; border:1px solid #333; color:#888; padding:6px 12px; border-radius:4px; font-size:0.75rem; cursor:pointer;">⏳ 복구</button>
                     <button onclick="exportText()" style="background:none; border:1px solid #333; color:#888; padding:6px 12px; border-radius:4px; font-size:0.75rem; cursor:pointer;">💾 TXT</button>
@@ -148,7 +158,7 @@
     </div>
 
     <div class="status-bar">
-        <div id="progress-bar" style="height:3px; background:#4a90e2; width:0%;"></div>
+        <div id="progress-bar" style="height:3px; background:var(--primary-blue); width:0%; transition:0.3s;"></div>
         <div class="status-info">
             <div>
                 <span onclick="setGoal()" style="cursor:pointer; text-decoration:underline; margin-right:10px; color:#888;">목표:<span id="display-goal">5,000</span></span>
@@ -157,8 +167,8 @@
             <div style="display:flex; align-items:center; gap:5px;">
                 <span id="last-save-time" style="color:#555; margin-right:10px;">저장 기록 없음</span>
                 <div id="word-count" style="margin-right:10px;">0자</div>
-                <div id="sync-status" style="font-weight:bold;">●</div>
-                <span style="color:#222; font-weight:bold; margin-left:10px;">v5.66</span>
+                <div id="sync-status" style="font-weight:bold; transition: 0.3s;">●</div>
+                <span style="color:#222; font-weight:bold; margin-left:10px;">v5.68</span>
             </div>
         </div>
     </div>
@@ -167,7 +177,8 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, onSnapshot, query, orderBy, writeBatch, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        const firebaseConfig = {
+        // 사용자 Firebase 설정값
+        const firebaseConfig = { 
  apiKey: "AIzaSyC4FjTYr8xxPH9y7H13h8EzIf-CxKb8QkI",
   authDomain: "my-typi-app.firebaseapp.com",
   projectId: "my-typi-app",
@@ -180,6 +191,7 @@
         const db = getFirestore(app);
         enableIndexedDbPersistence(db).catch(() => {});
 
+        // 초기 명령 설정
         document.execCommand('defaultParagraphSeparator', false, 'div');
 
         const editor = document.getElementById('editor');
@@ -197,7 +209,7 @@
         let foldersData = [];
         let chaptersData = [];
 
-        // IME 입력 중 글자 유실 방지
+        // 1. 한국어 입력(IME) 안정화 로직
         editor.addEventListener('compositionstart', () => { isComposing = true; });
         editor.addEventListener('compositionend', () => { 
             isComposing = false; 
@@ -213,6 +225,7 @@
             }
         });
 
+        // 2. 붙여넣기 정규화 (줄바꿈 유지)
         editor.addEventListener('paste', (e) => {
             e.preventDefault();
             const text = (e.originalEvent || e).clipboardData.getData('text/plain');
@@ -221,7 +234,7 @@
             updateWordCount();
         });
 
-        // 원본 로직 유지 (드래그 앤 드롭 등)
+        // 3. 드래그 앤 드롭 (원본 기능)
         let dragSrcEl = null;
         function handleDragStart(e) { dragSrcEl = this; this.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
         function handleDragOver(e) { if (e.preventDefault) e.preventDefault(); return false; }
@@ -235,13 +248,16 @@
                 if (fromIdx < toIdx) list.insertBefore(dragSrcEl, this.nextSibling);
                 else list.insertBefore(dragSrcEl, this);
                 const batch = writeBatch(db);
-                Array.from(list.children).forEach((item, index) => { batch.update(doc(db, "myNovels", item.dataset.id), { order: index }); });
+                Array.from(list.children).forEach((item, index) => {
+                    batch.update(doc(db, "myNovels", item.dataset.id), { order: index });
+                });
                 await batch.commit();
             }
             return false;
         }
         function handleDragEnd() { this.classList.remove('dragging'); }
 
+        // 4. 통합 검색 엔진
         window.openSearch = () => {
             const keyword = prompt("검색어 입력:");
             if (!keyword || keyword.trim() === "") return;
@@ -252,7 +268,9 @@
             results.forEach(res => {
                 const plainText = (res.content || "").replace(/<[^>]*>?/gm, '');
                 const kwIndex = plainText.indexOf(keyword);
-                const snippet = plainText.substring(Math.max(0, kwIndex-40), Math.min(plainText.length, kwIndex+40));
+                const start = Math.max(0, kwIndex - 40);
+                const end = Math.min(plainText.length, kwIndex + 40);
+                const snippet = plainText.substring(start, end);
                 const item = document.createElement('div');
                 item.className = 'search-res-item';
                 item.innerHTML = `<div class="search-res-title">${res.title}</div><div class="search-res-snippet">...${snippet.replace(new RegExp(keyword, 'g'), `<span class="highlight">${keyword}</span>`)}...</div>`;
@@ -262,6 +280,7 @@
         };
         window.closeSearch = () => document.getElementById('search-panel').classList.remove('active');
 
+        // 5. 앱 구동 및 리얼타임 데이터 로직
         function startApp() {
             onSnapshot(query(collection(db, "folders"), orderBy("createdAt", "asc")), (snap) => {
                 foldersData = []; snap.forEach(d => foldersData.push({id: d.id, ...d.data()}));
@@ -274,7 +293,10 @@
                 renderAll();
                 if(!isTyping && currentChapterId) {
                     const current = chaptersData.find(c => c.id === currentChapterId);
-                    if(current) { lastSavedContent = current.content; lastSaveDisplay.innerText = formatTime(current.updatedAt); }
+                    if(current) {
+                        lastSavedContent = current.content;
+                        lastSaveDisplay.innerText = formatTime(current.updatedAt);
+                    }
                 }
             });
         }
@@ -297,9 +319,9 @@
                 li.className = `chapter-item-container ${c.id === currentChapterId ? 'active' : ''}`;
                 li.dataset.id = c.id;
                 li.draggable = true;
-                li.innerHTML = `<div class="chapter-item">${c.title || '제목 없음'}</div><div style="padding:0 10px; opacity:0.3; cursor:pointer;" onclick="deleteChapter('${c.id}', event)">×</div>`;
+                li.innerHTML = `<div class="chapter-item">${c.title || '제목 없음'}</div><div class="delete-btn" onclick="deleteChapter('${c.id}', event)">×</div>`;
                 li.addEventListener('dragstart', handleDragStart); li.addEventListener('dragover', handleDragOver); li.addEventListener('drop', handleDrop); li.addEventListener('dragend', handleDragEnd);
-                li.onclick = (e) => { if (e.target.innerText !== '×') { isTyping = false; loadChapter(c.id); } };
+                li.onclick = (e) => { if (!e.target.classList.contains('delete-btn')) { isTyping = false; loadChapter(c.id); } };
                 ul.appendChild(li);
             });
             return div;
@@ -339,7 +361,11 @@
             }, 1000);
         };
 
-        function formatTime(ts) { if(!ts) return "저장 기록 없음"; const n = new Date(ts); return `${n.getHours()}:${String(n.getMinutes()).padStart(2,'0')}`; }
+        function formatTime(timestamp) {
+            if(!timestamp) return "저장 기록 없음";
+            const n = new Date(timestamp);
+            return `${n.getHours()}:${String(n.getMinutes()).padStart(2,'0')}`;
+        }
 
         function updateWordCount() { 
             if(isComposing) return;
@@ -348,6 +374,7 @@
             document.getElementById('progress-bar').style.width = Math.min((cnt / settings.goalWords) * 100, 100) + "%";
         }
 
+        // 초기 실행 및 설정 로드
         onSnapshot(doc(db, "app_settings", "global_v1"), (sDoc) => { if (sDoc.exists()) { settings = { ...settings, ...sDoc.data() }; applySettings(); } });
         window.checkAuth = () => { if(document.getElementById('pw-input').value === settings.studioPw) { document.getElementById('lock-screen').style.display = 'none'; sessionStorage.setItem('isStudioAuth', 'true'); startApp(); } else { alert("비밀번호 불일치"); } };
         if(sessionStorage.getItem('isStudioAuth') === 'true') { document.getElementById('lock-screen').style.display = 'none'; startApp(); }
@@ -359,6 +386,7 @@
             updateWordCount();
         }
 
+        // 글로벌 함수 연결
         window.toggleFolder = (id) => { currentFolderId = (currentFolderId === id) ? 'none' : id; localStorage.setItem('lastFolderId', currentFolderId); renderAll(); };
         window.switchTab = async (type) => {
             document.getElementById('tab-epi').classList.toggle('active', type === 'epi');
