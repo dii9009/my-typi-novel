@@ -252,7 +252,7 @@
     // [버그 수정] 잠금 해제 시 투명 레이어 물리적 제거
     window.unlockApp = () => {
         const pass = document.getElementById('pass-input').value;
-        if(pass === '비밀번호') { // 사용자 지정 비번
+        if(pass === '0000') { // 사용자 지정 비번
             const lock = document.getElementById('lock-screen');
             lock.classList.add('hidden');
             // 애니메이션 종료 후 완전 제거하여 클릭 가로막기 방지
