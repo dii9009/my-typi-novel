@@ -3,63 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Cloud Studio v5.68</title>
+    <title>Cloud Studio v5.68.1 (Stable)</title>
     <style>
+        /* ... 상단 스타일 동일 ... */
         :root { --font-size: 1.15rem; --line-height: 1.85; }
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #1a1a1a; color: #d4d4d4; font-family: 'Pretendard', -apple-system, sans-serif; overflow: hidden; }
         .app-container { display: flex; width: 100vw; height: 100vh; overflow: hidden; position: relative; }
-        
-        /* [기존 유지] 맞춤법 엔진 최적화 및 에디터 스타일 */
         #editor { 
             width: 100%; min-height: 80vh; font-size: var(--font-size); line-height: var(--line-height); 
             color: #d4d4d4; outline: none; white-space: break-spaces; word-break: break-all;
             padding: 40px 20px 200px 20px; box-sizing: border-box; caret-color: #007acc;
         }
-
-        /* 사이드바 레이아웃 */
+        /* 사이드바, 네비게이션, 잠금화면 스타일 기존과 동일하게 유지 */
         .sidebar { width: 280px; background: #252526; display: flex; flex-direction: column; border-right: 1px solid #333; transition: 0.3s; z-index: 100; flex-shrink: 0; }
         .sidebar.hidden { margin-left: -280px; }
         .main-content { flex: 1; display: flex; flex-direction: column; background: #1e1e1e; position: relative; overflow: hidden; min-width: 0; }
-        
-        /* 상단 네비게이션 */
         .top-nav { height: 50px; border-bottom: 1px solid #333; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; background: #252526; z-index: 50; flex-shrink: 0; }
         .progress-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background: #333; }
         #progress-bar { height: 100%; background: #007acc; width: 0%; transition: 0.4s ease; }
-
-        /* 폴더 및 리스트 시스템 */
         .sidebar-header { padding: 15px; border-bottom: 1px solid #333; display: flex; gap: 8px; }
         .folder-list-container { overflow-y: auto; flex: 1; }
         .folder-item { padding: 12px 15px; background: #2d2d2d; font-size: 0.9rem; font-weight: bold; border-bottom: 1px solid #3d3d3d; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
         .folder-item:hover { background: #353535; }
         .folder-item.active { background: #3d3d3d; color: #007acc; }
-
         .chapter-item-container { padding: 12px 15px 12px 35px; border-bottom: 1px solid #2a2a2a; cursor: pointer; font-size: 0.92rem; display: flex; justify-content: space-between; align-items: center; position: relative; transition: 0.2s; }
         .chapter-item-container:hover { background: #2d2d2d; }
         .chapter-item-container.active { background: #37373d; border-left: 4px solid #007acc; color: #fff; }
         .chapter-item-container.active::before { content: '▶'; position: absolute; left: 15px; font-size: 10px; color: #007acc; }
-
-        /* [핵심 수정] 잠금 화면 - 클릭 가로막기 방지 */
         #lock-screen { position: fixed; inset: 0; background: #1a1a1a; z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: 0.5s ease; visibility: visible; }
         #lock-screen.hidden { opacity: 0; pointer-events: none; visibility: hidden; }
-
-        /* 모달 시스템 */
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
         .modal-content { background: #252526; padding: 30px; border-radius: 12px; width: 320px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-
-        /* 버튼 및 입력창 */
         button { background: #3c3c3c; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; transition: 0.2s; }
         button:hover { background: #4c4c4c; }
         button.primary { background: #007acc; }
         button.primary:hover { background: #108adb; }
         input { background: #3c3c3c; color: #fff; border: 1px solid #444; padding: 10px; border-radius: 6px; width: 100%; box-sizing: border-box; }
-        
-        /* 유틸리티 */
         .icon-btn { background: none; padding: 5px; font-size: 1.1rem; }
         .delete-btn { opacity: 0.3; font-size: 1.2rem; padding: 0 5px; }
         .delete-btn:hover { opacity: 1; color: #ff5f56; }
         .hidden { display: none !important; }
-        
-        /* 스크롤바 커스텀 */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
@@ -84,8 +67,7 @@
             <button onclick="addNewChapter()" style="flex:1;">+ 쓰기</button>
             <button onclick="showSettings()" class="icon-btn">⚙️</button>
         </div>
-        <div class="folder-list-container" id="folder-list">
-            </div>
+        <div class="folder-list-container" id="folder-list"></div>
     </nav>
 
     <main class="main-content">
@@ -103,7 +85,7 @@
         </header>
         
         <div id="editor-scroller" style="flex:1; overflow-y:auto; position:relative;">
-            <div id="editor" contenteditable="true" oninput="handleInput()" spellcheck="false" translate="no"></div>
+            <div id="editor" contenteditable="false" oninput="handleInput()" spellcheck="false" translate="no"></div>
         </div>
 
         <div id="save-indicator" style="position:fixed; bottom:25px; right:25px; font-size:11px; color:rgba(255,255,255,0.2); letter-spacing:1px; pointer-events:none;"></div>
@@ -135,9 +117,9 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection, query, orderBy, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // [기존 5.58/5.64 설정 복구]
+    // [중요] 여기에 기존 Firebase Config를 반드시 입력하세요.
     const firebaseConfig = {
- apiKey: "AIzaSyC4FjTYr8xxPH9y7H13h8EzIf-CxKb8QkI",
+    apiKey: "AIzaSyC4FjTYr8xxPH9y7H13h8EzIf-CxKb8QkI",
   authDomain: "my-typi-app.firebaseapp.com",
   projectId: "my-typi-app",
   storageBucket: "my-typi-app.firebasestorage.app",
@@ -164,33 +146,29 @@
         document.documentElement.style.setProperty('--font-size', settings.fontSize);
     }
 
-    // [버그 수정] 챕터 로드 및 무한 대기 방지 로직
+    // [개선] 챕터 로드 최적화 (재시도 간격 조정)
     window.loadChapter = async (id) => {
         if(!id) return;
-        
-        // 1. 즉시 UI 업데이트 (목록 활성화 표시)
         currentChapterId = id;
         renderList(); 
 
         const editor = document.getElementById('editor');
         const indicator = document.getElementById('save-indicator');
         
-        // 2. 캐시된 데이터에서 먼저 찾기
         let chapter = chaptersData.find(c => c.id === id);
         
         if(!chapter) {
             indicator.innerText = "데이터 동기화 중...";
-            // 데이터가 올 때까지 0.15초 간격으로 최대 10번 재시도
             let retry = 0;
             const timer = setInterval(() => {
                 chapter = chaptersData.find(c => c.id === id);
-                if(chapter || retry > 10) {
+                if(chapter || retry > 15) { // 0.3초 간격으로 더 자주 체크
                     clearInterval(timer);
                     if(chapter) finalizeLoad(chapter);
                     else indicator.innerText = "로드 실패 (네트워크 확인)";
                 }
                 retry++;
-            }, 1500);
+            }, 300);
         } else {
             finalizeLoad(chapter);
         }
@@ -202,13 +180,11 @@
             window.updateWordCount();
             indicator.innerText = "로드 완료";
             setTimeout(() => indicator.innerText = "", 1000);
-            
-            // 모바일 대응: 로드 후 에디터 상단으로 스크롤
             document.getElementById('editor-scroller').scrollTop = 0;
         }
     };
 
-    // 실시간 DB 리스너 (기존 300줄 로직의 핵심)
+    // 실시간 DB 리스너 유지
     onSnapshot(query(collection(db, "folders"), orderBy("createdAt")), (snap) => {
         folders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         renderList();
@@ -222,25 +198,20 @@
     function renderList() {
         const list = document.getElementById('folder-list');
         let html = '';
-        
         if(folders.length === 0) {
             html = '<div style="padding:20px; color:#555; font-size:0.8rem; text-align:center;">폴더를 먼저 생성하세요.</div>';
         }
-
         folders.forEach(f => {
             const isActiveFolder = (currentFolderId === f.id);
             html += `<div class="folder-item ${isActiveFolder ? 'active' : ''}" onclick="window.setFolder('${f.id}')">
                         <span>📂 ${f.name}</span>
                         <span class="delete-btn" onclick="window.deleteFolder('${f.id}', event)">×</span>
                     </div>`;
-            
-            // 해당 폴더에 속한 챕터만 렌더링
             const fChapters = chaptersData.filter(c => c.folderId === f.id);
             fChapters.forEach(ch => {
                 const isActive = (currentChapterId === ch.id);
                 html += `
-                <div class="chapter-item-container ${isActive ? 'active' : ''}" 
-                     onclick="window.loadChapter('${ch.id}')">
+                <div class="chapter-item-container ${isActive ? 'active' : ''}" onclick="window.loadChapter('${ch.id}')">
                     <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${ch.title}</span>
                     <span class="delete-btn" onclick="window.deleteChapter('${ch.id}', event)">×</span>
                 </div>`;
@@ -249,13 +220,13 @@
         list.innerHTML = html;
     }
 
-    // [버그 수정] 잠금 해제 시 투명 레이어 물리적 제거
+    // [개선] 잠금 해제 시 에디터 활성화 로직 추가
     window.unlockApp = () => {
         const pass = document.getElementById('pass-input').value;
-        if(pass === '0000') { // 사용자 지정 비번
+        if(pass === '0000') { 
             const lock = document.getElementById('lock-screen');
             lock.classList.add('hidden');
-            // 애니메이션 종료 후 완전 제거하여 클릭 가로막기 방지
+            document.getElementById('editor').contentEditable = "true"; // 잠금 해제 시에만 편집 허용
             setTimeout(() => { lock.style.display = 'none'; }, 500);
         } else {
             alert("비밀번호가 틀렸습니다.");
@@ -263,36 +234,29 @@
         }
     };
 
-    // 입력 처리 및 자동 저장 (v5.64 최적화 버전)
     window.handleInput = () => {
         window.updateWordCount();
         clearTimeout(saveTimeout);
-        saveTimeout = setTimeout(saveData, 2000); // 2초 뒤 저장
+        saveTimeout = setTimeout(saveData, 2000);
     };
 
     async function saveData() {
         if(!currentChapterId) return;
         const editor = document.getElementById('editor');
         const content = editor.innerHTML;
-        
-        // 변경 사항이 없으면 무시
         if(content === lastSavedContent) return;
-        
         const indicator = document.getElementById('save-indicator');
         indicator.innerText = "CLOUD SAVING...";
-        
         try {
             await setDoc(doc(db, "myNovels", currentChapterId), { 
                 content: content, 
                 updatedAt: Date.now() 
             }, { merge: true });
-            
             lastSavedContent = content;
             indicator.innerText = "ALL CHANGES SAVED";
             setTimeout(() => { if(indicator.innerText === "ALL CHANGES SAVED") indicator.innerText = ""; }, 2000);
         } catch (e) {
             indicator.innerText = "SAVE ERROR!";
-            console.error(e);
         }
     }
 
@@ -300,13 +264,10 @@
         const text = (document.getElementById('editor').innerText || "").replace(/\r\n/g, "\n").trim();
         const cnt = text.length;
         document.getElementById('word-count').innerText = cnt.toLocaleString() + '자';
-        
-        // 프로그레스 바 업데이트
         const per = Math.min((cnt / settings.goalWords) * 100, 100);
         document.getElementById('progress-bar').style.width = per + "%";
     };
 
-    // 설정 관련 로직
     window.showSettings = () => {
         document.getElementById('goal-input').value = settings.goalWords;
         document.getElementById('settings-modal').style.display = 'flex';
@@ -315,17 +276,14 @@
     window.saveSettings = () => {
         settings.goalWords = parseInt(document.getElementById('goal-input').value) || 5000;
         settings.fontSize = document.getElementById('font-size-select').value;
-        
         localStorage.setItem('cs_settings_v5', JSON.stringify(settings));
         document.documentElement.style.setProperty('--font-size', settings.fontSize);
         window.updateWordCount();
         window.hideSettings();
     };
 
-    // 기타 기능 복구
     window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('hidden');
     window.setFolder = (id) => { currentFolderId = id; renderList(); };
-    
     window.addNewFolder = async () => {
         const name = prompt("폴더 이름을 입력하세요:");
         if(name) {
@@ -381,7 +339,6 @@
         navigator.clipboard.writeText(text).then(() => alert("전체 본문이 복사되었습니다."));
     };
 
-    // 엔터키 비번 입력 지원
     document.getElementById('pass-input').addEventListener('keypress', (e) => { if(e.key === 'Enter') window.unlockApp(); });
 </script>
 </body>
