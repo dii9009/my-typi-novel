@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Cloud Studio v5.71</title>
+    <title>Cloud Studio v5.72</title>
     <style>
-        /* [1. 전역 스타일 및 아이폰 최적화] */
+        /* [1. 기본 레이아웃 및 아이폰 흔들림 방지] */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         :root { --font-size: 1.15rem; --line-height: 1.85; --primary-blue: #4a90e2; }
         
@@ -18,7 +18,7 @@
         
         .app-container { display: flex; width: 100vw; height: 100vh; overflow: hidden; position: relative; }
 
-        /* [2. 사이드바 디자인] */
+        /* [2. 사이드바 및 리스트 디자인] */
         .sidebar { 
             width: 280px; min-width: 280px; height: 100%; 
             background: #111; border-right: 1px solid #333; 
@@ -43,31 +43,30 @@
         .folder-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 8px; cursor: pointer; color: #bbb; font-weight: bold; font-size: 0.85rem; border-bottom: 1px solid #222; }
         .chapter-list { list-style: none; padding: 0 0 0 10px; margin: 5px 0; min-height: 20px; }
         
-        /* 챕터 아이템 클릭 반응성 강화 */
+        /* 챕터 아이템 클릭 최적화 */
         .chapter-item-container { 
             display: flex; justify-content: space-between; align-items: center; 
             border-radius: 4px; margin-bottom: 2px; cursor: pointer; 
-            background: #1a1a1a; transition: background 0.2s;
-            position: relative;
+            background: #1a1a1a; transition: all 0.15s;
+            border: 1px solid transparent;
         }
-        .chapter-item-container:hover { background: #252525; }
-        .chapter-item-container.dragging { opacity: 0.4; border: 1px dashed var(--primary-blue); }
-        .chapter-item-container.active { background: #2a2a2a !important; border-left: 3px solid var(--primary-blue); }
+        .chapter-item-container:active { background: #333; transform: scale(0.98); }
+        .chapter-item-container.active { background: #252525 !important; border-left: 3px solid var(--primary-blue); }
+        .chapter-item-container.dragging { opacity: 0.3; border: 1px dashed var(--primary-blue); }
         
         .chapter-item { 
             flex: 1; padding: 12px 10px; font-size: 0.85rem; color: #888; 
             overflow: hidden; text-overflow: ellipsis; white-space: nowrap; 
-            pointer-events: none; /* 클릭 이벤트가 부모(container)로 전달되게 함 */
+            pointer-events: none; /* 클릭이 부모에게 백퍼센트 전달되도록 */
         }
         
         .delete-btn { 
-            width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;
+            width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;
             font-size: 1.1rem; color: #444; opacity: 0.5; transition: 0.2s; flex-shrink: 0; cursor: pointer;
-            z-index: 2; /* 챕터 클릭보다 우선순위 */
         }
         .delete-btn:hover { color: #ff4d4d; opacity: 1; }
 
-        /* [3. 에디터 본문] */
+        /* [3. 메인 컨텐츠 영역] */
         .main-content { 
             flex: 1; height: 100%; overflow-y: auto; overflow-x: hidden; 
             background: #1a1a1a; display: flex; flex-direction: column; 
@@ -86,7 +85,7 @@
         }
         #editor div, #editor p { margin: 0 !important; padding: 0 !important; min-height: 1.2em; }
 
-        /* [4. 상태바 및 기타] */
+        /* [4. 상태바] */
         .status-bar { position: fixed; bottom: 0; left: 280px; right: 0; background: #111; border-top: 1px solid #222; z-index: 998; }
         @media (max-width: 768px) { .status-bar { left: 0; } }
         .status-info { padding: 12px 25px; display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; }
@@ -122,7 +121,7 @@
                     <button onclick="addNewFolder()" style="flex:1; padding:10px; background:#2a2a2a; border:1px solid #444; color:#fff; border-radius:6px; font-size:0.75rem;">📁 폴더</button>
                     <button onclick="addNewChapter()" style="flex:1; padding:10px; background:#2a2a2a; border:1px solid #444; color:#fff; border-radius:6px; font-size:0.75rem;">📝 에피</button>
                 </div>
-                <div id="folder-list">데이터 로드 중...</div>
+                <div id="folder-list">데이터 로딩 중...</div>
             </div>
             <div id="content-world" class="sidebar-content hidden">
                 <textarea id="world-memo-area" style="width:100%; height:85%; background:transparent; border:none; color:#888; font-size:0.85rem; line-height:1.7; outline:none; resize:none; padding:10px; box-sizing:border-box;" placeholder="세계관 설정을 기록하세요..."></textarea>
@@ -153,7 +152,7 @@
                 <span id="last-save-time" style="color:#555; margin-right:10px;">저장 기록 없음</span>
                 <div id="word-count" style="margin-right:10px;">0자</div>
                 <div id="sync-status" style="font-weight:bold;">●</div>
-                <span style="color:#222; font-weight:bold; margin-left:10px;">v5.71</span>
+                <span style="color:#222; font-weight:bold; margin-left:10px;">v5.72</span>
             </div>
         </div>
     </div>
@@ -187,34 +186,13 @@
         let isTyping = false;
         let isComposing = false; 
         let lastSavedContent = "";
+        let saveTimer;
+        let typingEndTimer;
         let settings = { goalWords: 5000, fontSize: 1.15, studioPw: "0000" };
         let foldersData = [];
         let chaptersData = [];
 
-        // 1. 드래그 앤 드롭 로직
-        let dragSrcEl = null;
-        function handleDragStart(e) { dragSrcEl = this; this.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
-        function handleDragOver(e) { if (e.preventDefault) e.preventDefault(); return false; }
-        async function handleDrop(e) {
-            e.stopPropagation();
-            if (dragSrcEl !== this) {
-                const list = this.parentNode;
-                const nodes = Array.from(list.children);
-                const fromIdx = nodes.indexOf(dragSrcEl);
-                const toIdx = nodes.indexOf(this);
-                if (fromIdx < toIdx) list.insertBefore(dragSrcEl, this.nextSibling);
-                else list.insertBefore(dragSrcEl, this);
-                const batch = writeBatch(db);
-                Array.from(list.children).forEach((item, index) => {
-                    batch.update(doc(db, "myNovels", item.dataset.id), { order: index });
-                });
-                await batch.commit();
-            }
-            return false;
-        }
-        function handleDragEnd() { this.classList.remove('dragging'); }
-
-        // 2. 앱 구동 및 데이터 로직
+        // --- 데이터 로직 ---
         function startApp() {
             onSnapshot(query(collection(db, "folders"), orderBy("createdAt", "asc")), (snap) => {
                 foldersData = []; snap.forEach(d => foldersData.push({id: d.id, ...d.data()}));
@@ -251,41 +229,77 @@
         function renderFolderUI(name, id, chapters) {
             const div = document.createElement('div');
             const isOpen = (currentFolderId === id);
-            div.innerHTML = `<div class="folder-header ${isOpen ? 'open' : ''}" onclick="toggleFolder('${id}')"><span>${name}</span></div><ul class="chapter-list ${isOpen ? '' : 'hidden'}"></ul>`;
+            div.innerHTML = `<div class="folder-header" onclick="toggleFolder('${id}')"><span>${name}</span></div><ul class="chapter-list ${isOpen ? '' : 'hidden'}"></ul>`;
             const ul = div.querySelector('ul');
+            
             chapters.forEach(c => {
                 const li = document.createElement('li'); 
                 li.className = `chapter-item-container ${c.id === currentChapterId ? 'active' : ''}`;
-                li.dataset.id = c.id; li.draggable = true;
-                li.innerHTML = `<div class="chapter-item">${c.title || '제목 없음'}</div><div class="delete-btn" onclick="deleteChapter('${c.id}', event)">×</div>`;
-                li.addEventListener('dragstart', handleDragStart); li.addEventListener('dragover', handleDragOver); li.addEventListener('drop', handleDrop); li.addEventListener('dragend', handleDragEnd);
+                li.dataset.id = c.id; 
+                li.draggable = true; // 드래그 기능 유지
+                li.innerHTML = `<div class="chapter-item">${c.title || '제목 없음'}</div><div class="delete-btn">×</div>`;
                 
-                // [수정] 클릭 로직: isTyping 체크 제거 및 강제 로드
-                li.onclick = (e) => { 
-                    if (!e.target.classList.contains('delete-btn')) { 
-                        isTyping = false; // 강제로 편집 모드 해제하여 로딩 허용
-                        loadChapter(c.id); 
-                    } 
-                };
+                // 드래그 이벤트 연결
+                li.addEventListener('dragstart', handleDragStart);
+                li.addEventListener('dragover', handleDragOver);
+                li.addEventListener('drop', handleDrop);
+                li.addEventListener('dragend', handleDragEnd);
+
+                // [v5.72 핵심] 클릭 이벤트 처리 방식 변경
+                li.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('delete-btn')) {
+                        deleteChapter(c.id, e);
+                    } else {
+                        // 다른 글 클릭 시 현재 편집 세션 즉시 종료
+                        isTyping = false; 
+                        clearTimeout(saveTimer);
+                        loadChapter(c.id);
+                    }
+                });
+
                 ul.appendChild(li);
             });
             return div;
         }
 
         async function loadChapter(id) {
-            currentChapterId = id; localStorage.setItem('lastChapterId', id);
+            currentChapterId = id; 
+            localStorage.setItem('lastChapterId', id);
             const snap = await getDoc(doc(db, "myNovels", id));
             if (snap.exists()) {
                 const data = snap.data();
-                titleInput.value = data.title; editor.innerHTML = data.content;
+                titleInput.value = data.title; 
+                editor.innerHTML = data.content;
                 lastSavedContent = data.content;
                 lastSaveDisplay.innerText = formatTime(data.updatedAt);
-                updateWordCount(); if(window.innerWidth <= 768) closeSidebar(); renderAll();
+                updateWordCount(); 
+                if(window.innerWidth <= 768) closeSidebar(); 
+                renderAll();
             }
         }
 
-        let saveTimer;
-        let typingEndTimer;
+        // --- 드래그 앤 드롭 로직 ---
+        let dragSrcEl = null;
+        function handleDragStart(e) { dragSrcEl = this; this.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
+        function handleDragOver(e) { if (e.preventDefault) e.preventDefault(); return false; }
+        async function handleDrop(e) {
+            e.stopPropagation();
+            if (dragSrcEl !== this) {
+                const list = this.parentNode;
+                const nodes = Array.from(list.children);
+                const fromIdx = nodes.indexOf(dragSrcEl);
+                const toIdx = nodes.indexOf(this);
+                if (fromIdx < toIdx) list.insertBefore(dragSrcEl, this.nextSibling);
+                else list.insertBefore(dragSrcEl, this);
+                const batch = writeBatch(db);
+                Array.from(list.children).forEach((item, index) => { batch.update(doc(db, "myNovels", item.dataset.id), { order: index }); });
+                await batch.commit();
+            }
+            return false;
+        }
+        function handleDragEnd() { this.classList.remove('dragging'); }
+
+        // --- 편집 및 저장 로직 ---
         const processSave = (type) => {
             syncStatus.style.color = "#ff4d4d";
             clearTimeout(saveTimer);
