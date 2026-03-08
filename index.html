@@ -3,25 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Cloud Studio v5.76</title>
+    <title>Cloud Studio v5.78</title>
     <style>
-        /* [1. 전역 스타일 및 리셋] */
+        /* [1. 전역 스타일 가이드] */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        :root { --font-size: 1.15rem; --line-height: 1.85; --primary-blue: #4a90e2; }
+        :root { --font-size: 1.15rem; --line-height: 1.85; --primary-blue: #4a90e2; --bg-dark: #1a1a1a; --sidebar-bg: #111; }
         
         html, body { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
-            background: #1a1a1a; color: #d4d4d4; 
-            font-family: 'Pretendard', -apple-system, sans-serif; 
-            touch-action: manipulation; /* 터치 반응 속도 향상 */
+            background: var(--bg-dark); color: #d4d4d4; 
+            font-family: 'Pretendard', -apple-system, sans-serif;
+            overflow-x: hidden;
         }
         
         .app-container { display: flex; width: 100vw; height: 100vh; overflow: hidden; position: relative; }
 
-        /* [2. 사이드바 - 클릭 반응성 특화] */
+        /* [2. 사이드바 - 드래그 핸들 및 클릭 영역 분리] */
         .sidebar { 
             width: 280px; min-width: 280px; height: 100%; 
-            background: #111; border-right: 1px solid #333; 
+            background: var(--sidebar-bg); border-right: 1px solid #333; 
             padding: 20px; display: flex; flex-direction: column; 
             z-index: 1000; transition: transform 0.3s;
         }
@@ -40,43 +40,27 @@
         .sidebar-content { flex: 1; overflow-y: auto; overflow-x: hidden; }
         .hidden { display: none !important; }
 
+        /* 폴더 및 에피소드 리스트 UI */
         .folder-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 8px; cursor: pointer; color: #bbb; font-weight: bold; font-size: 0.85rem; border-bottom: 1px solid #222; }
         .chapter-list { list-style: none; padding: 0 0 0 5px; margin: 5px 0; min-height: 20px; }
         
-        /* [v5.76 핵심] 챕터 아이템 레이아웃 */
         .chapter-item-container { 
-            display: flex; align-items: center; 
-            border-radius: 4px; margin-bottom: 2px; 
-            background: #1a1a1a; transition: background 0.1s;
-            min-height: 48px; /* 터치 영역 확대 */
+            display: flex; align-items: center; border-radius: 4px; margin-bottom: 2px; 
+            background: #1a1a1a; transition: background 0.2s; min-height: 48px;
         }
-        .chapter-item-container.active { background: #222 !important; border-left: 3px solid var(--primary-blue); }
+        .chapter-item-container.active { background: #252525 !important; border-left: 3px solid var(--primary-blue); }
         .chapter-item-container.dragging { opacity: 0.2; background: #000; }
 
-        /* 드래그 전용 핸들 */
-        .drag-handle {
-            width: 30px; height: 48px; display: flex; align-items: center; justify-content: center;
-            color: #333; cursor: grab; font-size: 0.9rem; flex-shrink: 0;
-        }
-
-        /* 순수 클릭 영역 */
-        .chapter-click-area {
-            flex: 1; padding: 12px 5px; font-size: 0.85rem; color: #777; 
-            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-            cursor: pointer;
-        }
+        .drag-handle { width: 30px; height: 48px; display: flex; align-items: center; justify-content: center; color: #333; cursor: grab; font-size: 0.9rem; flex-shrink: 0; }
+        .chapter-click-area { flex: 1; padding: 12px 5px; font-size: 0.85rem; color: #777; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .active .chapter-click-area { color: #fff; }
-
-        .delete-btn { 
-            width: 40px; height: 48px; display: flex; align-items: center; justify-content: center;
-            font-size: 1.1rem; color: #444; opacity: 0.5; transition: 0.2s; flex-shrink: 0; cursor: pointer;
-        }
+        .delete-btn { width: 40px; height: 48px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: #444; opacity: 0.5; transition: 0.2s; flex-shrink: 0; cursor: pointer; }
         .delete-btn:hover { color: #ff4d4d; opacity: 1; }
 
-        /* [3. 메인 에디터 및 검색 패널] */
+        /* [3. 메인 에디터 영역] */
         .main-content { 
             flex: 1; height: 100%; overflow-y: auto; overflow-x: hidden; 
-            background: #1a1a1a; display: flex; flex-direction: column; 
+            background: var(--bg-dark); display: flex; flex-direction: column; 
             align-items: center; padding: 40px 20px 160px 20px; 
             box-sizing: border-box; -webkit-overflow-scrolling: touch;
         }
@@ -88,13 +72,14 @@
             font-size: var(--font-size); line-height: var(--line-height); 
             color: #d4d4d4; outline: none; 
             white-space: break-spaces; word-break: break-all; 
-            padding-bottom: 300px; text-decoration-skip-ink: none; 
+            padding-bottom: 350px; text-decoration-skip-ink: none; 
         }
         #editor div, #editor p { margin: 0 !important; padding: 0 !important; min-height: 1.2em; }
 
+        /* [4. 검색 패널 - 원본 복구] */
         #search-panel { 
             position: absolute; top: 0; right: 0; width: 350px; height: 100%; 
-            background: #111; border-left: 1px solid #333; z-index: 1500; 
+            background: var(--sidebar-bg); border-left: 1px solid #333; z-index: 1500; 
             display: flex; flex-direction: column; transform: translateX(100%); transition: 0.3s; padding: 20px; 
         }
         #search-panel.active { transform: translateX(0); }
@@ -103,7 +88,7 @@
         .search-res-snippet { font-size: 0.75rem; color: #888; line-height: 1.5; }
         .highlight { background: rgba(74, 144, 226, 0.3); color: #fff; padding: 0 2px; border-radius: 2px; }
 
-        /* [4. 상태바 및 잠금화면] */
+        /* [5. 하단 상태바 및 레이아웃] */
         .status-bar { position: fixed; bottom: 0; left: 280px; right: 0; background: #111; border-top: 1px solid #222; z-index: 998; }
         @media (max-width: 768px) { .status-bar { left: 0; } }
         .status-info { padding: 12px 25px; display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; }
@@ -117,7 +102,7 @@
         @media (max-width: 768px) { .menu-toggle { display: block; } }
     </style>
 </head>
-<body>
+<body lang="ko">
 
     <div id="lock-screen">
         <h2 style="color:var(--primary-blue); letter-spacing:4px;">STUDIO LOCK</h2>
@@ -179,7 +164,7 @@
                 <span id="last-save-time" style="color:#555; margin-right:10px;">저장 기록 없음</span>
                 <div id="word-count" style="margin-right:10px;">0자</div>
                 <div id="sync-status" style="font-weight:bold;">●</div>
-                <span style="color:#222; font-weight:bold; margin-left:10px;">v5.76</span>
+                <span style="color:#222; font-weight:bold; margin-left:10px;">v5.78</span>
             </div>
         </div>
     </div>
@@ -188,7 +173,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, onSnapshot, query, orderBy, writeBatch, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // Firebase 설정 (사용자 키 입력 필요)
+        // [주의] 사용자 Firebase 설정값을 입력하세요.
         const firebaseConfig = { 
  apiKey: "AIzaSyC4FjTYr8xxPH9y7H13h8EzIf-CxKb8QkI",
   authDomain: "my-typi-app.firebaseapp.com",
@@ -219,7 +204,20 @@
         let foldersData = [];
         let chaptersData = [];
 
-        // 1. 드래그 앤 드롭 (핸들 분리 버전)
+        // [1. 입력 안정화 로직] - 마지막 글자 사라짐 방지
+        editor.addEventListener('compositionstart', () => { isComposing = true; });
+        editor.addEventListener('compositionend', () => { isComposing = false; updateWordCount(); processSave('epi'); });
+        editor.addEventListener('input', () => { isTyping = true; if (!isComposing) { updateWordCount(); processSave('epi'); } });
+        
+        editor.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const text = (e.originalEvent || e).clipboardData.getData('text/plain');
+            const cleanHtml = text.split(/\r?\n/).map(line => `<div>${line.length > 0 ? line : '<br>'}</div>`).join("");
+            document.execCommand("insertHTML", false, cleanHtml);
+            updateWordCount();
+        });
+
+        // [2. 드래그 앤 드롭 정밀 로직]
         let dragSrcEl = null;
         function handleDragStart(e) { dragSrcEl = this.parentNode; dragSrcEl.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
         function handleDragOver(e) { if (e.preventDefault) e.preventDefault(); return false; }
@@ -241,7 +239,7 @@
         }
         function handleDragEnd() { if(dragSrcEl) dragSrcEl.classList.remove('dragging'); dragSrcEl = null; }
 
-        // 2. 통합 검색 엔진
+        // [3. 검색 엔진 및 결과 표시]
         window.openSearch = () => {
             const keyword = prompt("검색어 입력:");
             if (!keyword || keyword.trim() === "") return;
@@ -262,7 +260,7 @@
         };
         window.closeSearch = () => document.getElementById('search-panel').classList.remove('active');
 
-        // 3. 앱 구동 및 리스트 렌더링
+        // [4. 데이터베이스 연동 메인]
         function startApp() {
             onSnapshot(query(collection(db, "folders"), orderBy("createdAt", "asc")), (snap) => {
                 foldersData = []; snap.forEach(d => foldersData.push({id: d.id, ...d.data()}));
@@ -273,16 +271,13 @@
                 chaptersData = []; snap.forEach(d => chaptersData.push({id: d.id, ...d.data()}));
                 chaptersData.sort((a, b) => (a.order || 0) - (b.order || 0) || (a.createdAt || 0) - (b.createdAt || 0));
                 renderAll();
-                if(!isTyping && currentChapterId && editor.innerHTML === "") {
-                    const current = chaptersData.find(c => c.id === currentChapterId);
-                    if(current) { titleInput.value = current.title; editor.innerHTML = current.content; lastSavedContent = current.content; updateWordCount(); }
-                }
+                // 새로고침 시 초기 데이터 강제 주입
+                if(!isTyping && currentChapterId && editor.innerHTML === "") { loadChapter(currentChapterId); }
             });
         }
 
         function renderAll() {
-            const listUI = document.getElementById('folder-list');
-            listUI.innerHTML = '';
+            const listUI = document.getElementById('folder-list'); listUI.innerHTML = '';
             const unclassified = chaptersData.filter(c => !c.folderId);
             if(unclassified.length > 0) listUI.appendChild(renderFolderUI("📂 미분류", "none", unclassified));
             foldersData.forEach(f => listUI.appendChild(renderFolderUI("📂 " + f.name, f.id, chaptersData.filter(c => c.folderId === f.id))));
@@ -297,24 +292,16 @@
                 const li = document.createElement('li'); 
                 li.className = `chapter-item-container ${c.id === currentChapterId ? 'active' : ''}`;
                 li.dataset.id = c.id;
-                // [v5.76] 전체 드래그 속성 제거, 핸들로 분리
-                li.innerHTML = `
-                    <div class="drag-handle" draggable="true">::</div>
-                    <div class="chapter-click-area">${c.title || '제목 없음'}</div>
-                    <div class="delete-btn">×</div>
-                `;
+                li.innerHTML = `<div class="drag-handle" draggable="true">::</div><div class="chapter-click-area">${c.title || '제목 없음'}</div><div class="delete-btn">×</div>`;
                 
-                // 이벤트 핸들러 분리
                 const handle = li.querySelector('.drag-handle');
                 handle.addEventListener('dragstart', handleDragStart);
                 handle.addEventListener('dragend', handleDragEnd);
                 li.addEventListener('dragover', handleDragOver);
                 li.addEventListener('drop', handleDrop);
 
-                // 순수 클릭 영역 이벤트
-                li.querySelector('.chapter-click-area').onclick = () => { isTyping = false; loadChapter(c.id); };
+                li.querySelector('.chapter-click-area').onclick = () => { isTyping = false; editor.innerHTML = ""; loadChapter(c.id); };
                 li.querySelector('.delete-btn').onclick = (e) => { e.stopPropagation(); deleteChapter(c.id); };
-
                 ul.appendChild(li);
             });
             return div;
@@ -348,20 +335,7 @@
             }, 1000);
         };
 
-        editor.addEventListener('compositionstart', () => isComposing = true);
-        editor.addEventListener('compositionend', () => { isComposing = false; updateWordCount(); processSave('epi'); });
-        editor.addEventListener('input', () => { isTyping = true; if(!isComposing) { updateWordCount(); processSave('epi'); } });
-        titleInput.addEventListener('input', () => processSave('epi'));
-        worldMemo.addEventListener('input', () => processSave('world'));
-
-        editor.addEventListener('paste', (e) => {
-            e.preventDefault();
-            const text = (e.originalEvent || e).clipboardData.getData('text/plain');
-            const cleanHtml = text.split(/\r?\n/).map(line => `<div>${line.length > 0 ? line : '<br>'}</div>`).join("");
-            document.execCommand("insertHTML", false, cleanHtml);
-            updateWordCount();
-        });
-
+        // [5. 유틸리티 함수 - 원본 로직 전수 포함]
         function formatTime(ts) { if(!ts) return "저장 기록 없음"; const n = new Date(ts); return `${n.getHours()}:${String(n.getMinutes()).padStart(2,'0')}`; }
         function updateWordCount() { if(isComposing) return; const cnt = (editor.textContent || "").replace(/\r\n/g, "\n").trim().length; document.getElementById('word-count').innerText = cnt.toLocaleString() + '자'; document.getElementById('progress-bar').style.width = Math.min((cnt / settings.goalWords) * 100, 100) + "%"; }
         
@@ -395,6 +369,9 @@
         window.deleteChapter = async (id) => { if(confirm("삭제?")) await deleteDoc(doc(db, "myNovels", id)); };
         window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('active');
         window.closeSidebar = () => document.getElementById('sidebar').classList.remove('active');
+
+        titleInput.addEventListener('input', () => processSave('epi'));
+        worldMemo.addEventListener('input', () => processSave('world'));
     </script>
 </body>
 </html>
