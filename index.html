@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Cloud Studio v5.92 Safeguard</title>
+    <title>Cloud Studio v5.91 FINAL</title>
     <style>
         /* [1. 전역 스타일 가이드] */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -15,21 +15,6 @@
             overflow: hidden;
         }
         .app-container { display: flex; width: 100vw; height: 100vh; overflow: hidden; position: relative; }
-
-        /* [오프라인 세이프가드 UI] */
-        #offline-banner {
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            background: #ff4d4d; color: white; padding: 15px 30px;
-            border-radius: 50px; font-weight: bold; z-index: 200000;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: none;
-            animation: pulse 1.5s infinite; border: 2px solid white;
-            text-align: center; min-width: 320px;
-        }
-        @keyframes pulse {
-            0% { transform: translateX(-50%) scale(1); opacity: 1; }
-            50% { transform: translateX(-50%) scale(1.05); opacity: 0.8; }
-            100% { transform: translateX(-50%) scale(1); opacity: 1; }
-        }
 
         /* [2. 사이드바 디자인] */
         .sidebar { 
@@ -48,25 +33,29 @@
         .sidebar-header h2 { font-size: 0.75rem; color: #444; letter-spacing: 2px; margin: 0; cursor: pointer; }
         
         .tab-menu { display: flex; gap: 5px; margin-bottom: 15px; border-bottom: 1px solid #222; padding-bottom: 10px; }
-        .tab-btn { flex: 1; padding: 10px; font-size: 0.7rem; background: none; border: 1px solid #333; color: #555; cursor: pointer; border-radius: 4px; }
+        .tab-btn { flex: 1; padding: 10px; font-size: 0.7rem; background: none; border: 1px solid #333; color: #555; cursor: pointer; border-radius: 4px; transition: 0.2s; }
         .tab-btn.active { background: #2a2a2a; color: #fff; border-color: var(--primary-blue); }
 
         .sidebar-content { flex: 1; overflow-y: auto; overflow-x: hidden; }
         .hidden { display: none !important; }
 
+        /* 리스트 스타일 */
         .folder-header { padding: 12px 8px; cursor: pointer; color: #bbb; font-weight: bold; font-size: 0.85rem; border-bottom: 1px solid #222; }
         .chapter-list { list-style: none; padding: 0; margin: 5px 0; min-height: 20px; }
         .chapter-item-container { 
             display: flex; align-items: center; border-radius: 4px; margin-bottom: 2px; 
             background: #1a1a1a; transition: background 0.1s; min-height: 50px; 
+            position: relative;
         }
+        .chapter-item-container:hover { background: #222; }
         .chapter-item-container.active { background: #252525 !important; border-left: 4px solid var(--primary-blue); }
         .chapter-item-container.dragging { opacity: 0.2; background: #000; }
 
         .drag-handle { width: 35px; height: 50px; display: flex; align-items: center; justify-content: center; color: #333; cursor: grab; font-size: 0.9rem; flex-shrink: 0; border-right: 1px solid #222; }
         .chapter-click-area { flex: 1; padding: 12px 10px; font-size: 0.85rem; color: #777; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; user-select: none; }
         .active .chapter-click-area { color: #fff; font-weight: bold; }
-        .delete-btn { width: 40px; height: 50px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: #444; opacity: 0.5; cursor: pointer; transition: 0.2s; }
+        .delete-btn { width: 40px; height: 50px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: #444; opacity: 0.5; flex-shrink: 0; cursor: pointer; transition: 0.2s; }
+        .delete-btn:hover { color: #ff4d4d; opacity: 1; }
 
         /* [3. 메인 에디터 영역] */
         .main-content { 
@@ -85,7 +74,7 @@
             white-space: break-spaces; word-break: break-all; 
             padding-bottom: 350px;
         }
-        #editor div { margin: 0 !important; padding: 0 !important; min-height: 1.2em; }
+        #editor div, #editor p { margin: 0 !important; padding: 0 !important; min-height: 1.2em; }
 
         /* [4. 통합 검색 패널] */
         #search-panel { 
@@ -94,7 +83,10 @@
             display: flex; flex-direction: column; transform: translateX(100%); transition: 0.3s; padding: 20px; 
         }
         #search-panel.active { transform: translateX(0); }
-        .search-res-item { padding: 15px 10px; border-bottom: 1px solid #222; cursor: pointer; }
+        .search-res-item { padding: 15px 10px; border-bottom: 1px solid #222; cursor: pointer; transition: 0.2s; }
+        .search-res-item:hover { background: #1a1a1a; }
+        .search-res-title { font-weight: bold; font-size: 0.8rem; color: var(--primary-blue); margin-bottom: 5px; }
+        .search-res-snippet { font-size: 0.75rem; color: #888; line-height: 1.5; }
         .highlight { background: rgba(74, 144, 226, 0.3); color: #fff; padding: 0 2px; border-radius: 2px; }
 
         /* [5. 하단 상태바 및 잠금화면] */
@@ -112,10 +104,6 @@
     </style>
 </head>
 <body lang="ko">
-
-    <div id="offline-banner">
-        ⚠️ 지금은 오프라인입니다!<br>작성 후 [💾 TXT]로 꼭 저장하세요.
-    </div>
 
     <div id="lock-screen">
         <h2 style="color:var(--primary-blue); letter-spacing:4px;">STUDIO LOCK</h2>
@@ -169,12 +157,15 @@
     <div class="status-bar">
         <div id="progress-bar"></div>
         <div class="status-info">
-            <div>목표:<span id="display-goal">5,000</span> | 글자:<span id="display-font">1.15</span></div>
+            <div>
+                <span onclick="setGoal()" style="cursor:pointer; text-decoration:underline; margin-right:10px; color:#888;">목표:<span id="display-goal">5,000</span></span>
+                <span onclick="setFontSize()" style="cursor:pointer; text-decoration:underline; color:#888;">글자:<span id="display-font">1.15</span></span>
+            </div>
             <div style="display:flex; align-items:center; gap:5px;">
                 <span id="last-save-time" style="color:#555; margin-right:10px;">저장 기록 없음</span>
                 <div id="word-count" style="margin-right:10px;">0자</div>
                 <div id="sync-status" style="font-weight:bold;">●</div>
-                <span style="color:#222; font-weight:bold; margin-left:10px;">v5.92</span>
+                <span style="color:#222; font-weight:bold; margin-left:10px;">v5.91</span>
             </div>
         </div>
     </div>
@@ -183,8 +174,8 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, onSnapshot, query, orderBy, writeBatch, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // [v5.91] 사용자 Firebase 설정값 입력
         const firebaseConfig = { 
-
   apiKey: "AIzaSyC4FjTYr8xxPH9y7H13h8EzIf-CxKb8QkI",
   authDomain: "my-typi-app.firebaseapp.com",
   projectId: "my-typi-app",
@@ -194,38 +185,26 @@
  };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        enableIndexedDbPersistence(db).catch(() => {});
+        enableIndexedDbPersistence(db).catch(() => {}); // 오프라인 지원
 
         document.execCommand('defaultParagraphSeparator', false, 'div');
         const editor = document.getElementById('editor');
         const titleInput = document.getElementById('chapter-title');
         const worldMemo = document.getElementById('world-memo-area');
         const syncStatus = document.getElementById('sync-status');
-        const offlineBanner = document.getElementById('offline-banner');
+        const lastSaveDisplay = document.getElementById('last-save-time');
 
         let currentChapterId = localStorage.getItem('lastChapterId') || '';
         let currentFolderId = localStorage.getItem('lastFolderId') || 'none';
         let isTyping = false, isComposing = false, lastSavedContent = "", foldersData = [], chaptersData = [], settings = { goalWords: 5000, fontSize: 1.15 };
 
-        // [v5.92 핵심] 네트워크 상태 감시 로직
-        window.addEventListener('offline', () => {
-            offlineBanner.style.display = 'block';
-            offlineBanner.style.background = '#ff4d4d';
-            offlineBanner.innerHTML = '⚠️ 지금은 오프라인입니다!<br>작성 후 [💾 TXT]로 꼭 저장하세요.';
-            syncStatus.style.color = '#ff4d4d';
-        });
-
-        window.addEventListener('online', () => {
-            offlineBanner.style.background = '#4ade80';
-            offlineBanner.innerHTML = '✅ 연결이 복구되었습니다!<br>자동 저장을 시작합니다.';
-            syncStatus.style.color = '#4ade80';
-            setTimeout(() => { offlineBanner.style.display = 'none'; }, 3000);
-        });
-
+        // [v5.91 핵심] 본문 로드 함수 (이중 출력 강제 - 복구 버튼 없이 자동 로드)
         window.loadChapter = async function(id) {
             if(!id) return;
-            isTyping = true; currentChapterId = id; localStorage.setItem('lastChapterId', id);
+            isTyping = true; 
+            currentChapterId = id; localStorage.setItem('lastChapterId', id);
             editor.innerHTML = "<div style='color:var(--primary-blue)'>서버에서 데이터를 호출 중입니다...</div>";
+            
             try {
                 const snap = await getDoc(doc(db, "myNovels", id));
                 if (snap.exists()) {
@@ -233,11 +212,21 @@
                     titleInput.value = d.title || "";
                     editor.innerHTML = d.content || "";
                     lastSavedContent = d.content || "";
-                    setTimeout(() => { editor.innerHTML = d.content || ""; isTyping = false; updateWordCount(); }, 50);
-                    document.getElementById('last-save-time').innerText = new Date(d.updatedAt).toLocaleTimeString();
+                    
+                    setTimeout(() => {
+                        editor.innerHTML = d.content || "";
+                        isTyping = false;
+                        updateWordCount();
+                    }, 50);
+
+                    lastSaveDisplay.innerText = new Date(d.updatedAt).toLocaleTimeString();
                     renderAll();
+                    if(window.innerWidth <= 768) closeSidebar();
                 }
-            } catch (e) { isTyping = false; }
+            } catch (e) { 
+                editor.innerHTML = `<div style='color:red'>⚠️ 로딩 에러: ${e.message}</div>`;
+                isTyping = false;
+            }
         };
 
         function startApp() {
@@ -250,6 +239,7 @@
                 chaptersData = []; snap.forEach(d => chaptersData.push({id: d.id, ...d.data()}));
                 chaptersData.sort((a, b) => (a.order || 0) - (b.order || 0) || (a.createdAt || 0) - (b.createdAt || 0));
                 renderAll();
+                // 새로고침 시 초기 로드
                 if(!isTyping && currentChapterId && (editor.innerHTML === "" || editor.innerHTML.includes("서버에서"))) {
                     loadChapter(currentChapterId);
                 }
@@ -273,12 +263,18 @@
                 const li = document.createElement('li');
                 li.className = `chapter-item-container ${c.id === currentChapterId ? 'active' : ''}`;
                 li.dataset.id = c.id;
-                li.innerHTML = `<div class="drag-handle" draggable="true" ondragstart="dragStart(event, '${c.id}')">::</div><div class="chapter-click-area" onclick="loadChapter('${c.id}')">${c.title || '제목 없음'}</div><div class="delete-btn" onclick="deleteChapter('${c.id}', event)">×</div>`;
+                // 인라인 onclick 삽입으로 클릭 절대 보장
+                li.innerHTML = `
+                    <div class="drag-handle" draggable="true" ondragstart="dragStart(event, '${c.id}')">::</div>
+                    <div class="chapter-click-area" onclick="loadChapter('${c.id}')">${c.title || '제목 없음'}</div>
+                    <div class="delete-btn" onclick="deleteChapter('${c.id}', event)">×</div>
+                `;
                 ul.appendChild(li);
             });
             return div;
         }
 
+        // 저장 로직 (1.5초 딜레이)
         let saveTimer;
         const processSave = (type) => {
             if(isTyping) return;
@@ -292,9 +288,9 @@
                         await setDoc(doc(db, "myNovels", currentChapterId), { title: titleInput.value, content: editor.innerHTML, updatedAt: now }, { merge: true });
                         lastSavedContent = editor.innerHTML;
                     }
-                    if(navigator.onLine) syncStatus.style.color = "#4ade80";
-                    document.getElementById('last-save-time').innerText = new Date(now).toLocaleTimeString();
-                } catch (e) { syncStatus.style.color = "red"; }
+                    syncStatus.style.color = "#4ade80";
+                    lastSaveDisplay.innerText = new Date(now).toLocaleTimeString();
+                } catch (e) { syncStatus.style.color = "orange"; }
             }, 1500);
         };
 
@@ -304,6 +300,7 @@
         titleInput.addEventListener('input', () => processSave('epi'));
         worldMemo.addEventListener('input', () => processSave('world'));
 
+        // 드래그앤드롭 순서 변경
         let dragId = ""; window.dragStart = (e, id) => { dragId = id; e.dataTransfer.effectAllowed = 'move'; };
         document.addEventListener('dragover', (e) => e.preventDefault());
         document.addEventListener('drop', async (e) => {
@@ -322,9 +319,16 @@
             }
         });
 
+        // 유틸리티 함수
         window.checkAuth = () => { if(document.getElementById('pw-input').value === "0000") { document.getElementById('lock-screen').remove(); startApp(); } };
         window.toggleFolder = (id) => { currentFolderId = (currentFolderId === id ? 'none' : id); localStorage.setItem('lastFolderId', currentFolderId); renderAll(); };
-        window.switchTab = (t) => { document.getElementById('tab-epi').classList.toggle('active', t==='epi'); document.getElementById('tab-world').classList.toggle('active', t==='world'); document.getElementById('content-epi').classList.toggle('hidden', t!=='epi'); document.getElementById('content-world').classList.toggle('hidden', t!=='world'); if(t==='world' && worldMemo.value==="") getDoc(doc(db,"app_settings","world_memo")).then(s=>worldMemo.value=s.data().content); };
+        window.switchTab = (t) => { 
+            document.getElementById('tab-epi').classList.toggle('active', t==='epi'); 
+            document.getElementById('tab-world').classList.toggle('active', t==='world'); 
+            document.getElementById('content-epi').classList.toggle('hidden', t!=='epi'); 
+            document.getElementById('content-world').classList.toggle('hidden', t!=='world'); 
+            if(t==='world' && worldMemo.value==="") getDoc(doc(db,"app_settings","world_memo")).then(s=>worldMemo.value=s.data().content); 
+        };
         window.updateWordCount = () => { const cnt = editor.textContent.length; document.getElementById('word-count').innerText = cnt.toLocaleString() + '자'; document.getElementById('progress-bar').style.width = Math.min((cnt / settings.goalWords) * 100, 100) + "%"; };
         window.openSearch = () => { 
             const k = prompt("검색어:"); if(!k) return; 
@@ -340,13 +344,20 @@
         window.closeSearch = () => document.getElementById('search-panel').classList.remove('active');
         window.copyAllText = () => { navigator.clipboard.writeText(editor.innerText).then(() => alert("전체 복사됨!")); };
         window.exportText = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([editor.innerText], {type:'text/plain'})); a.download = `${titleInput.value}.txt`; a.click(); };
-        window.restoreVersion = () => { if(confirm("복구?")) { editor.innerHTML = lastSavedContent; updateWordCount(); } };
-        window.addNewFolder = async () => { const n = prompt("새 폴더:"); if(n) await setDoc(doc(db, "folders", 'fd'+Date.now()), { name: n, createdAt: Date.now() }); };
-        window.addNewChapter = async () => { if(currentFolderId === 'none') return alert("폴더 선택!"); const id = 'ch'+Date.now(); await setDoc(doc(db, "myNovels", id), { title: "새 에피소드", content: "", folderId: currentFolderId, order: chaptersData.length, updatedAt: Date.now() }); loadChapter(id); };
-        window.deleteChapter = async (id, e) => { e.stopPropagation(); if(confirm("삭제?")) await deleteDoc(doc(db, "myNovels", id)); };
+        window.restoreVersion = () => { if(confirm("작업 세션 시작 시점의 글을 불러올까요?")) { editor.innerHTML = lastSavedContent; updateWordCount(); } };
+        window.addNewFolder = async () => { const n = prompt("새 폴더 이름:"); if(n) await setDoc(doc(db, "folders", 'fd'+Date.now()), { name: n, createdAt: Date.now() }); };
+        window.addNewChapter = async () => { if(currentFolderId === 'none') return alert("폴더를 먼저 선택해주세요!"); const id = 'ch'+Date.now(); await setDoc(doc(db, "myNovels", id), { title: "새 에피소드", content: "", folderId: currentFolderId, order: chaptersData.length, updatedAt: Date.now(), createdAt: Date.now() }); loadChapter(id); };
+        window.deleteChapter = async (id, e) => { e.stopPropagation(); if(confirm("정말 삭제하시겠습니까?")) await deleteDoc(doc(db, "myNovels", id)); };
         window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('active');
         window.closeSidebar = () => document.getElementById('sidebar').classList.remove('active');
-        window.applySettings = () => { document.documentElement.style.setProperty('--font-size', settings.fontSize + 'rem'); document.getElementById('display-goal').innerText = settings.goalWords.toLocaleString(); updateWordCount(); };
+        window.setGoal = () => { const v = prompt("목표 글자수:", settings.goalWords); if(v) setDoc(doc(db, "app_settings", "global_v1"), { goalWords: parseInt(v) }, { merge: true }); };
+        window.setFontSize = () => { const v = prompt("글자 크기 (rem단위, 기본 1.15):", settings.fontSize); if(v) setDoc(doc(db, "app_settings", "global_v1"), { fontSize: parseFloat(v) }, { merge: true }); };
+        window.applySettings = () => { 
+            document.documentElement.style.setProperty('--font-size', settings.fontSize + 'rem'); 
+            document.getElementById('display-goal').innerText = settings.goalWords.toLocaleString(); 
+            document.getElementById('display-font').innerText = settings.fontSize; 
+            updateWordCount(); 
+        };
     </script>
 </body>
 </html>
