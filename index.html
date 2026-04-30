@@ -165,7 +165,7 @@
                 <span id="last-save-time" style="color:#555; margin-right:10px;">저장 기록 없음</span>
                 <div id="word-count" style="margin-right:10px;">0자</div>
                 <div id="sync-status" style="font-weight:bold;">●</div>
-                <span style="color:#222; font-weight:bold; margin-left:10px;">v5.91</span>
+                <span style="color:#222; font-weight:bold; margin-left:10px;">v5.92</span>
             </div>
         </div>
     </div>
@@ -180,7 +180,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 
-        // [v5.91] 사용자 Firebase 설정값 입력
+        // [v5.92] 사용자 Firebase 설정값 입력
         const firebaseConfig = { 
   apiKey: "AIzaSyC4FjTYr8xxPH9y7H13h8EzIf-CxKb8QkI",
   authDomain: "my-typi-app.firebaseapp.com",
@@ -208,7 +208,7 @@ const db = initializeFirestore(app, {
         let currentFolderId = localStorage.getItem('lastFolderId') || 'none';
         let isTyping = false, isComposing = false, lastSavedContent = "", foldersData = [], chaptersData = [], settings = { goalWords: 5000, fontSize: 1.15 };
 
-        // [v5.91 핵심] 본문 로드 함수 (이중 출력 강제 - 복구 버튼 없이 자동 로드)
+        // [v5.92 핵심] 본문 로드 함수 (이중 출력 강제 - 복구 버튼 없이 자동 로드)
         window.loadChapter = async function(id) {
             if(!id) return;
             isTyping = true; 
